@@ -13,7 +13,8 @@ from typing import List, Dict, Optional, Tuple
 
 from control import data
 from control import chargemode
-from dataclass_utils.factories import empty_dict_factory, emtpy_list_factory
+from control.chargemode import Chargemode as Chargemode_enum
+from dataclass_utils.factories import currents_list_factory, empty_dict_factory, emtpy_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -81,10 +82,30 @@ def instant_charging_factory() -> InstantCharging:
 
 @dataclass
 class Chargemode:
-    selected: str = "stop"
+    selected: Chargemode_enum = Chargemode_enum.STOP
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
     instant_charging: InstantCharging = field(default_factory=instant_charging_factory)
+
+    @property
+    def selected(self) -> Chargemode_enum:
+        return self._selected
+
+    @selected.setter
+    def selected(self, selected: str):
+        try:
+            self._selected = Chargemode_enum(selected)
+        except ValueError:
+            self._selected = Chargemode_enum.STOP
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['_selected'] = state['_selected'].value
+        return state
+
+    def __setstate__(self, state):
+        state['_selected'] = Chargemode_enum(state['_selected'])
+        self.__dict__.update(state)
 
 
 def time_charging_factory() -> TimeCharging:
@@ -135,8 +156,8 @@ class ControlParameter:
     timestamp_switch_on_off: Optional[str] = None
     timestamp_auto_phase_switch: Optional[str] = None
     timestamp_perform_phase_switch: Optional[str] = None
-    submode: str = chargemode.Chargemode.STOP
-    chargemode: str = chargemode.Chargemode.STOP
+    submode: Chargemode_enum = Chargemode_enum.STOP
+    chargemode: Chargemode_enum = Chargemode_enum.STOP
     used_amount_instant_charging: float = 0
     imported_at_plan_start: float = 0
     current_plan: Optional[str] = None
@@ -235,9 +256,9 @@ class Ev:
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/timestamp_perform_phase_switch", None)
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/submode", "stop")
+                      "/control_parameter/submode", Chargemode_enum.STOP.value)
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/chargemode", "stop")
+                      "/control_parameter/chargemode", Chargemode_enum.STOP.value)
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/used_amount_instant_charging", 0)
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
@@ -247,8 +268,8 @@ class Ev:
             self.data.control_parameter.required_current = 0
             self.data.control_parameter.timestamp_auto_phase_switch = None
             self.data.control_parameter.timestamp_perform_phase_switch = None
-            self.data.control_parameter.submode = "stop"
-            self.data.control_parameter.chargemode = "stop"
+            self.data.control_parameter.submode = Chargemode_enum.STOP
+            self.data.control_parameter.chargemode = Chargemode_enum.STOP
             self.data.control_parameter.used_amount_instant_charging = 0
             self.data.control_parameter.imported_at_plan_start = 0
             self.data.control_parameter.current_plan = None
@@ -281,7 +302,7 @@ class Ev:
         message = None
         state = True
         try:
-            if self.charge_template.data.chargemode.selected == "scheduled_charging":
+            if self.charge_template.data.chargemode.selected == Chargemode_enum.SCHEDULED_CHARGING:
                 used_amount = charged_since_mode_switch - self.data.control_parameter.imported_at_plan_start
                 plan_data = self.charge_template.scheduled_charging_recent_plan(
                     self.data.get.soc,
@@ -320,7 +341,7 @@ class Ev:
                     Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/current_plan", name)
                     required_current = time_charging_current
             if (required_current == 0) or (required_current is None):
-                if self.charge_template.data.chargemode.selected == "instant_charging":
+                if self.charge_template.data.chargemode.selected == Chargemode_enum.INSTANT_CHARGING:
                     # Wenn der Submode auf stop gestellt wird, wird auch die Energiemenge seit Moduswechsel
                     # zurückgesetzt, dann darf nicht die Energiemenge erneute geladen werden.
                     if (self.charge_template.data.chargemode.instant_charging.limit.selected == "amount" and
@@ -332,25 +353,25 @@ class Ev:
                     required_current, submode, message = self.charge_template.instant_charging(
                         self.data.get.soc,
                         self.data.control_parameter.used_amount_instant_charging)
-                elif self.charge_template.data.chargemode.selected == "pv_charging":
+                elif self.charge_template.data.chargemode.selected == Chargemode_enum.PV_CHARGING:
                     required_current, submode, message = self.charge_template.pv_charging(
                         self.data.get.soc, self.ev_template.data.min_current)
-                elif self.charge_template.data.chargemode.selected == "standby":
+                elif self.charge_template.data.chargemode.selected == Chargemode_enum.STANDBY:
                     # Text von Zeit-und Zielladen nicht überschreiben.
                     if message is None:
                         required_current, submode, message = self.charge_template.standby()
                     else:
                         required_current, submode, _ = self.charge_template.standby()
-                elif self.charge_template.data.chargemode.selected == "stop":
+                elif self.charge_template.data.chargemode.selected == Chargemode_enum.STOP:
                     required_current, submode, message = self.charge_template.stop()
-            if submode == "stop" or submode == "standby" or (self.charge_template.data.chargemode.selected == "stop"):
+            if submode == Chargemode_enum.STOP or submode == Chargemode_enum.STANDBY or (self.charge_template.data.chargemode.selected == Chargemode_enum.STOP):
                 state = False
             if phases is None:
                 phases = self.data.control_parameter.phases
             return state, message, submode, required_current, phases
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
-            return False, "ein interner Fehler aufgetreten ist.", "stop", 0, self.data.control_parameter.phases
+            return False, "ein interner Fehler aufgetreten ist.", Chargemode_enum.STOP, 0, self.data.control_parameter.phases
 
     def check_if_mode_changed(self, chargemode_log_entry: str) -> bool:
         """ prüft, ob sich etwas an den Parametern für die Regelung geändert hat,
@@ -378,10 +399,10 @@ class Ev:
             # die Reihenfolge innerhalb des Prioritäten-Tupels bezieht und auf dieser Ebene kein LP, der bereits
             # lädt, für einen neu hinzugekommenen abgeschaltet werden darf. Wenn sich auch der Lademodus geändert
             # hat, muss die neue Stromstärke in jedem Fall berücksichtigt werden.
-            if ((self.charge_template.data.chargemode.selected == "pv_charging" or
-                    self.charge_template.data.chargemode.selected == "scheduled_charging") and
-                    ((self.data.control_parameter.submode == "pv_charging" or
-                        self.data.control_parameter.chargemode == "pv_charging") and
+            if ((self.charge_template.data.chargemode.selected == Chargemode_enum.PV_CHARGING or
+                    self.charge_template.data.chargemode.selected == Chargemode_enum.SCHEDULED_CHARGING) and
+                    ((self.data.control_parameter.submode == Chargemode_enum.PV_CHARGING or
+                        self.data.control_parameter.chargemode == Chargemode_enum.PV_CHARGING) and
                         set_current > self.data.control_parameter.required_current)):
                 current_changed = False
             else:
@@ -400,14 +421,14 @@ class Ev:
         try:
             self.data.control_parameter.submode = submode
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/submode", submode)
-            if submode == "time_charging":
-                self.data.control_parameter.chargemode = "time_charging"
-                Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode", "time_charging")
+                      "/control_parameter/submode", submode.value)
+            if submode == Chargemode_enum.TIME_CHARGING:
+                self.data.control_parameter.chargemode = Chargemode_enum.TIME_CHARGING
+                Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode", Chargemode_enum.TIME_CHARGING.value)
             else:
                 self.data.control_parameter.chargemode = self.charge_template.data.chargemode.selected
                 Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode",
-                          self.charge_template.data.chargemode.selected)
+                          self.charge_template.data.chargemode.selected.value)
             self.data.control_parameter.prio = self.charge_template.data.prio
             Pub().pub("openWB/set/vehicle/"+str(self.num) +
                       "/control_parameter/prio", self.charge_template.data.prio)
@@ -618,17 +639,17 @@ class ChargeTemplate:
                 plan = timecheck.check_plans_timeframe(self.data.time_charging.plans)
                 if plan is not None:
                     if plan.limit.selected == "none":  # kein Limit konfiguriert, mit konfigurierter Stromstärke laden
-                        return plan.current, "time_charging", message, plan.name
+                        return plan.current, Chargemode_enum.TIME_CHARGING, message, plan.name
                     elif plan.limit.selected == "soc":  # SoC Limit konfiguriert
                         if soc < plan.limit.soc:
-                            return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
+                            return plan.current, Chargemode_enum.TIME_CHARGING, message, plan.name  # Limit nicht erreicht
                         else:
-                            return 0, "stop", self.TIME_CHARGING_SOC_REACHED, plan.name  # Limit erreicht
+                            return 0, Chargemode_enum.STOP, self.TIME_CHARGING_SOC_REACHED, plan.name  # Limit erreicht
                     elif plan.limit.selected == "amount":  # Energiemengenlimit konfiguriert
                         if used_amount_time_charging < plan.limit.amount:
-                            return plan.current, "time_charging", message, plan.name  # Limit nicht erreicht
+                            return plan.current, Chargemode_enum.TIME_CHARGING, message, plan.name  # Limit nicht erreicht
                         else:
-                            return 0, "stop", self.TIME_CHARGING_AMOUNT_REACHED, plan.name  # Limit erreicht
+                            return 0, Chargemode_enum.STOP, self.TIME_CHARGING_AMOUNT_REACHED, plan.name  # Limit erreicht
                     else:
                         raise TypeError(f'{plan.limit.selected} unbekanntes Zeitladen-Limit.')
                 else:
@@ -636,10 +657,10 @@ class ChargeTemplate:
             else:
                 message = self.TIME_CHARGING_NO_PLAN_CONFIGURED
             log.debug(message)
-            return 0, "stop", message, None
+            return 0, Chargemode_enum.STOP, message, None
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
-            return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), None
+            return 0, Chargemode_enum.STOP, "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc(), None
 
     INSTANT_CHARGING_PRICE_EXCEEDED = "Keine Ladung, da der aktuelle Strompreis über dem maximalen Strompreis liegt."
     INSTANT_CHARGING_SOC_REACHED = "Keine Ladung, da der Soc bereits erreicht wurde."
@@ -655,24 +676,24 @@ class ChargeTemplate:
             instant_charging = self.data.chargemode.instant_charging
             if data.data.optional_data.data.et.active:
                 if not data.data.optional_data.et_price_lower_than_limit():
-                    return 0, "stop", self.INSTANT_CHARGING_PRICE_EXCEEDED
+                    return 0, Chargemode_enum.STOP, self.INSTANT_CHARGING_PRICE_EXCEEDED
             if instant_charging.limit.selected == "none":
-                return instant_charging.current, "instant_charging", message
+                return instant_charging.current, Chargemode_enum.INSTANT_CHARGING, message
             elif instant_charging.limit.selected == "soc":
                 if soc < instant_charging.limit.soc:
-                    return instant_charging.current, "instant_charging", message
+                    return instant_charging.current, Chargemode_enum.INSTANT_CHARGING, message
                 else:
-                    return 0, "stop", self.INSTANT_CHARGING_SOC_REACHED
+                    return 0, Chargemode_enum.STOP, self.INSTANT_CHARGING_SOC_REACHED
             elif instant_charging.limit.selected == "amount":
                 if used_amount_instant_charging < self.data.chargemode.instant_charging.limit.amount:
-                    return instant_charging.current, "instant_charging", message
+                    return instant_charging.current, Chargemode_enum.INSTANT_CHARGING, message
                 else:
-                    return 0, "stop", self.INSTANT_CHARGING_AMOUNT_REACHED
+                    return 0, Chargemode_enum.STOP, self.INSTANT_CHARGING_AMOUNT_REACHED
             else:
                 raise TypeError(f'{instant_charging.limit.selected} unbekanntes Sofortladen-Limit.')
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
-            return 0, "stop", "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+            return 0, Chargemode_enum.STOP, "Keine Ladung, da da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     PV_CHARGING_SOC_REACHED = "Keine Ladung, da der maximale Soc bereits erreicht wurde."
 
@@ -685,18 +706,18 @@ class ChargeTemplate:
             if soc < pv_charging.max_soc:
                 if pv_charging.min_soc != 0:
                     if soc < pv_charging.min_soc:
-                        return pv_charging.min_soc_current, "instant_charging", message
+                        return pv_charging.min_soc_current, Chargemode_enum.INSTANT_CHARGING, message
                 if pv_charging.min_current == 0:
                     # nur PV; Ampere darf nicht 0 sein, wenn geladen werden soll
-                    return min_current, "pv_charging", message
+                    return min_current, Chargemode_enum.PV_CHARGING, message
                 else:
                     # Min PV
-                    return pv_charging.min_current, "instant_charging", message
+                    return pv_charging.min_current, Chargemode_enum.INSTANT_CHARGING, message
             else:
-                return 0, "stop", self.PV_CHARGING_SOC_REACHED
+                return 0, Chargemode_enum.STOP, self.PV_CHARGING_SOC_REACHED
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.ct_num))
-            return 0, "stop", "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
+            return 0, Chargemode_enum.STOP, "Keine Ladung, da ein interner Fehler aufgetreten ist: "+traceback.format_exc()
 
     def scheduled_charging_recent_plan(self,
                                        soc: float,
@@ -709,7 +730,7 @@ class ChargeTemplate:
         Ladestrom ein. Um etwas mehr Puffer zu haben, wird bis 20 Min nach dem Zieltermin noch geladen, wenn dieser
         nicht eingehalten werden konnte.
         """
-        if phase_switch_supported and data.data.general_data.get_phases_chargemode("scheduled_charging") == 0:
+        if phase_switch_supported and data.data.general_data.get_phases_chargemode(Chargemode_enum.SCHEDULED_CHARGING) == 0:
             max_current = ev_template.data.max_current_multi_phases
             plan_data = self.search_plan(max_current, soc, ev_template, max_phases, used_amount)
             if plan_data:
@@ -798,7 +819,7 @@ class ChargeTemplate:
                                         max_phases: int,
                                         min_current: int) -> Tuple[float, str, str, int]:
         current = 0
-        mode = "stop"
+        mode = Chargemode_enum.STOP
         if plan_data is None:
             return current, mode, self.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, max_phases
         current_plan = self.data.chargemode.scheduled_charging.plans[plan_data.num]
@@ -810,7 +831,7 @@ class ChargeTemplate:
         elif limit.selected == "soc" and limit.soc_scheduled <= soc < limit.soc_limit:
             message = self.SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC
             current = min_current
-            mode = "pv_charging"
+            mode = Chargemode_enum.PV_CHARGING
         elif limit.selected == "amount" and used_amount >= limit.amount:
             message = self.SCHEDULED_CHARGING_REACHED_AMOUNT
         elif 0 < plan_data.remaining_time < 300:  # 5 Min vor spätestem Ladestart
@@ -821,13 +842,13 @@ class ChargeTemplate:
             message = self.SCHEDULED_CHARGING_IN_TIME.format(
                 plan_data.available_current, limit_string, current_plan.time)
             current = plan_data.available_current
-            mode = "instant_charging"
+            mode = Chargemode_enum.INSTANT_CHARGING
             phases = max_phases
         # weniger als die berechnete Zeit verfügbar
         elif plan_data.remaining_time <= 0:  # Ladestart wurde um maximal 20 Min verpasst.
             message = self.SCHEDULED_CHARGING_MAX_CURRENT.format(plan_data.max_current)
             current = plan_data.max_current
-            mode = "instant_charging"
+            mode = Chargemode_enum.INSTANT_CHARGING
             phases = max_phases
         else:
             # Wenn Elektronische Tarife aktiv sind, prüfen, ob jetzt ein günstiger Zeitpunkt zum Laden
@@ -838,24 +859,24 @@ class ChargeTemplate:
                 if timecheck.is_list_valid(hourlist):
                     message = "Sofortladen, da ein günstiger Zeitpunkt zum preisbasierten Laden ist."
                     current = plan_data.available_current
-                    mode = "instant_charging"
+                    mode = Chargemode_enum.INSTANT_CHARGING
                     phases = max_phases
                 else:
                     message = ("Kein Sofortladen, da kein günstiger Zeitpunkt zum preisbasierten Laden "
                                "ist. Falls vorhanden, wird mit EVU-Überschuss geladen.")
                     current = min_current
-                    mode = "pv_charging"
+                    mode = Chargemode_enum.PV_CHARGING
             else:
                 message = self.SCHEDULED_CHARGING_USE_PV
                 current = min_current
-                mode = "pv_charging"
+                mode = Chargemode_enum.PV_CHARGING
         return current, mode, message, phases
 
     def standby(self) -> Tuple[int, str, str]:
-        return 0, "standby", "Keine Ladung, da der Lademodus Standby aktiv ist."
+        return 0, Chargemode_enum.STANDBY, "Keine Ladung, da der Lademodus Standby aktiv ist."
 
     def stop(self) -> Tuple[int, str, str]:
-        return 0, "stop", "Keine Ladung, da der Lademodus Stop aktiv ist."
+        return 0, Chargemode_enum.STOP, "Keine Ladung, da der Lademodus Stop aktiv ist."
 
 
 def get_ev_to_rfid(rfid):

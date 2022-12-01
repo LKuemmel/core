@@ -5,6 +5,7 @@ import pytest
 
 from control import data
 from control import optional
+from control.chargemode import Chargemode
 from control.ev import ChargeTemplate, EvTemplate, EvTemplateData, SelectedPlan
 from control.general import General
 from helpermodules import timecheck
@@ -20,12 +21,12 @@ def data_module() -> None:
 
 @pytest.mark.parametrize(
     "plans, soc, used_amount_time_charging, plan_found, expected",
-    [pytest.param({}, 0, 0, None, (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_CONFIGURED, None),
+    [pytest.param({}, 0, 0, None, (0, Chargemode.STOP, ChargeTemplate.TIME_CHARGING_NO_PLAN_CONFIGURED, None),
                   id="no plan defined"),
      pytest.param({"0": TimeChargingPlan()}, 0, 0,  None,
-                  (0, "stop", ChargeTemplate.TIME_CHARGING_NO_PLAN_ACTIVE, None), id="no plan active"),
+                  (0, Chargemode.STOP, ChargeTemplate.TIME_CHARGING_NO_PLAN_ACTIVE, None), id="no plan active"),
      pytest.param({"0": TimeChargingPlan()}, 0, 0,  TimeChargingPlan(),
-                  (16, "time_charging", None, "Zeitladen-Standard"), id="plan active")
+                  (16, Chargemode.TIME_CHARGING, None, "Zeitladen-Standard"), id="plan active")
      ])
 def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amount_time_charging: float,
                        plan_found: TimeChargingPlan,
@@ -47,12 +48,13 @@ def test_time_charging(plans: Dict[int, TimeChargingPlan], soc: float, used_amou
 @pytest.mark.parametrize(
     "selected, current_soc, used_amount, expected",
     [
-        pytest.param("none", 0, 0, (10, "instant_charging", None), id="without limit"),
-        pytest.param("soc", 49, 0, (10, "instant_charging", None), id="limit soc: soc not reached"),
-        pytest.param("soc", 50, 0, (0, "stop", ChargeTemplate.INSTANT_CHARGING_SOC_REACHED),
+        pytest.param("none", 0, 0, (10, Chargemode.INSTANT_CHARGING, None), id="without limit"),
+        pytest.param("soc", 49, 0, (10, Chargemode.INSTANT_CHARGING, None), id="limit soc: soc not reached"),
+        pytest.param("soc", 50, 0, (0, Chargemode.STOP, ChargeTemplate.INSTANT_CHARGING_SOC_REACHED),
                      id="limit soc: soc reached"),
-        pytest.param("amount", 0, 999, (10, "instant_charging", None), id="limit amount: amount not reached"),
-        pytest.param("amount", 0, 1000, (0, "stop", ChargeTemplate.INSTANT_CHARGING_AMOUNT_REACHED),
+        pytest.param("amount", 0, 999, (10, Chargemode.INSTANT_CHARGING, None),
+                     id="limit amount: amount not reached"),
+        pytest.param("amount", 0, 1000, (0, Chargemode.STOP, ChargeTemplate.INSTANT_CHARGING_AMOUNT_REACHED),
                      id="limit amount: amount reached"),
     ])
 def test_instant_charging(selected: str, current_soc: float, used_amount: float,
@@ -72,10 +74,11 @@ def test_instant_charging(selected: str, current_soc: float, used_amount: float,
 @pytest.mark.parametrize(
     "min_soc, min_current, current_soc, expected",
     [
-        pytest.param(0, 0, 100, (0, "stop", ChargeTemplate.PV_CHARGING_SOC_REACHED), id="max soc reached"),
-        pytest.param(15, 0, 14, (10, "instant_charging", None), id="min soc not reached"),
-        pytest.param(15, 8, 15, (8, "instant_charging", None), id="min current configured"),
-        pytest.param(15, 0, 15, (6, "pv_charging", None), id="bare pv charging"),
+        pytest.param(0, 0, 100, (0, Chargemode.STOP,
+                     ChargeTemplate.PV_CHARGING_SOC_REACHED), id="max soc reached"),
+        pytest.param(15, 0, 14, (10, Chargemode.INSTANT_CHARGING, None), id="min soc not reached"),
+        pytest.param(15, 8, 15, (8, Chargemode.INSTANT_CHARGING, None), id="min current configured"),
+        pytest.param(15, 0, 15, (6, Chargemode.PV_CHARGING, None), id="bare pv charging"),
     ])
 def test_pv_charging(min_soc: int, min_current: int, current_soc: float,
                      expected: Tuple[int, str, Optional[str]]):
@@ -183,27 +186,27 @@ def test_search_plan(check_duration_return1: Tuple[Optional[float], bool],
 @pytest.mark.parametrize(
     "plan_data, soc, used_amount, selected, expected",
     [
-        pytest.param(None, 0, 0, "none", (0, "stop",
+        pytest.param(None, 0, 0, "none", (0, Chargemode.STOP,
                      ChargeTemplate.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, 3), id="no plans configured"),
-        pytest.param(SelectedPlan(), 90, 0, "soc", (0, "stop",
+        pytest.param(SelectedPlan(), 90, 0, "soc", (0, Chargemode.STOP,
                      ChargeTemplate.SCHEDULED_CHARGING_REACHED_LIMIT_SOC, 1), id="reached limit soc"),
-        pytest.param(SelectedPlan(), 80, 0, "soc", (6, "pv_charging",
+        pytest.param(SelectedPlan(), 80, 0, "soc", (6, Chargemode.PV_CHARGING,
                      ChargeTemplate.SCHEDULED_CHARGING_REACHED_SCHEDULED_SOC, 1), id="reached scheduled soc"),
-        pytest.param(SelectedPlan(phases=3), 0, 1000, "amount", (0, "stop",
+        pytest.param(SelectedPlan(phases=3), 0, 1000, "amount", (0, Chargemode.STOP,
                      ChargeTemplate.SCHEDULED_CHARGING_REACHED_AMOUNT, 3), id="reached amount"),
         pytest.param(SelectedPlan(remaining_time=299), 0, 999, "amount",
-                     (14, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_IN_TIME.format(
+                     (14, Chargemode.INSTANT_CHARGING, ChargeTemplate.SCHEDULED_CHARGING_IN_TIME.format(
                          14, ChargeTemplate.SCHEDULED_CHARGING_LIMITED_BY_AMOUNT.format(1.0), "07:00"), 3),
                      id="in time, limited by amount"),
         pytest.param(SelectedPlan(remaining_time=299), 79, 0, "soc",
-                     (14, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_IN_TIME.format(
+                     (14, Chargemode.INSTANT_CHARGING, ChargeTemplate.SCHEDULED_CHARGING_IN_TIME.format(
                          14, ChargeTemplate.SCHEDULED_CHARGING_LIMITED_BY_SOC.format(80), "07:00"), 3),
                      id="in time, limited by soc"),
         pytest.param(SelectedPlan(remaining_time=0), 79, 0, "soc",
-                     (16, "instant_charging", ChargeTemplate.SCHEDULED_CHARGING_MAX_CURRENT.format(16), 3),
+                     (16, Chargemode.INSTANT_CHARGING, ChargeTemplate.SCHEDULED_CHARGING_MAX_CURRENT.format(16), 3),
                      id="too late, but didn't miss for today"),
         pytest.param(SelectedPlan(remaining_time=301), 79, 0, "soc",
-                     (6, "pv_charging", ChargeTemplate.SCHEDULED_CHARGING_USE_PV, 1), id="too early, use pv"),
+                     (6, Chargemode.PV_CHARGING, ChargeTemplate.SCHEDULED_CHARGING_USE_PV, 1), id="too early, use pv"),
     ])
 def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
                                          soc: int,

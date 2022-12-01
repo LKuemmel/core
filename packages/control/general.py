@@ -6,6 +6,7 @@ import random
 from typing import List, Optional
 
 from control import data
+from control.chargemode import Chargemode
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 
@@ -149,11 +150,11 @@ class General:
         int: Anzahl Phasen
         """
         try:
-            if chargemode == "stop":
+            if chargemode == Chargemode.STOP:
                 # von maximaler Phasenzahl ausgehen.
                 return 3
             else:
-                return getattr(self.data.chargemode_config, chargemode).phases_to_use
+                return getattr(self.data.chargemode_config, chargemode.value).phases_to_use
         except Exception:
             log.exception("Fehler im General-Modul")
             return 1

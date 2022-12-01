@@ -18,6 +18,7 @@ import copy
 from dataclasses import asdict, dataclass, field
 import dataclasses
 import logging
+import pickle
 from threading import Thread
 import threading
 import traceback
@@ -27,6 +28,7 @@ from control import chargelog
 from control import cp_interruption
 from control import data
 from control import ev as ev_module
+from control.chargemode import Chargemode
 from control.ev import Ev
 from control import phase_switch
 from dataclass_utils.factories import (empty_dict_factory, emtpy_list_factory, currents_list_factory,
@@ -160,7 +162,7 @@ class ConnectedInfo:
 class ConnectedConfig:
     average_consumption: float = 17
     charge_template: int = 0
-    chargemode: str = "stop"
+    chargemode: Chargemode = Chargemode.STOP
     current_plan: Optional[int] = 0
     ev_template: int = 0
     priority: bool = False
@@ -656,8 +658,8 @@ class Chargepoint:
         charging_ev = self.data.set.charging_ev_data
         # Zeitladen kann nicht als Lademodus ausgewählt werden. Ob Zeitladen aktiv ist, lässt sich aus dem Submode
         # erkennen.
-        if charging_ev.data.control_parameter.submode == "time_charging":
-            mode = "time_charging"
+        if charging_ev.data.control_parameter.submode == Chargemode.TIME_CHARGING:
+            mode = Chargemode.TIME_CHARGING
         else:
             mode = charging_ev.charge_template.data.chargemode.selected
         chargemode = data.data.general_data.get_phases_chargemode(mode)
@@ -869,7 +871,7 @@ class Chargepoint:
                             f", max. Ist-Strom: {max(self.data.get.currents)}")
                 except Exception:
                     log.exception("Fehler im Prepare-Modul für Ladepunkt "+str(self.num))
-                    ev_list[f"ev{vehicle}"].data.control_parameter.submode = "stop"
+                    ev_list[f"ev{vehicle}"].data.control_parameter.submode = Chargemode.STOP
             else:
                 # Wenn kein EV zur Ladung zugeordnet wird, auf hinterlegtes EV zurückgreifen.
                 self._pub_connected_vehicle(
@@ -955,8 +957,8 @@ class Chargepoint:
                 soc_obj.range = vehicle.data.get.range
             info_obj = ConnectedInfo(id=vehicle.num,
                                      name=vehicle.data.name)
-            if (vehicle.charge_template.data.chargemode.selected == "time_charging" or
-                    vehicle.charge_template.data.chargemode.selected == "scheduled_charging"):
+            if (vehicle.charge_template.data.chargemode.selected == Chargemode.TIME_CHARGING or
+                    vehicle.charge_template.data.chargemode.selected == Chargemode.SCHEDULED_CHARGING):
                 current_plan = vehicle.data.control_parameter.current_plan
             else:
                 current_plan = None
@@ -977,7 +979,7 @@ class Chargepoint:
                           "/get/connected_vehicle/info", dataclasses.asdict(info_obj))
             if config_obj != self.data.get.connected_vehicle.config:
                 Pub().pub("openWB/chargepoint/"+str(self.num) +
-                          "/get/connected_vehicle/config", dataclasses.asdict(config_obj))
+                          "/get/connected_vehicle/config", dataclasses.asdict(config_obj.__getstate__()))
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 

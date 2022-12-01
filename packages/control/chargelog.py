@@ -5,6 +5,7 @@ import pathlib
 from typing import Dict, Union
 
 from control import data
+from control.chargemode import Chargemode
 from dataclass_utils import asdict
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -44,10 +45,10 @@ def collect_data(chargepoint):
             if chargepoint.data.get.charge_state:
                 if log_data.timestamp_start_charging is None:
                     log_data.timestamp_start_charging = timecheck.create_timestamp()
-                    if charging_ev.data.control_parameter.submode == "time_charging":
-                        log_data.chargemode_log_entry = "time_charging"
+                    if charging_ev.data.control_parameter.submode == Chargemode.TIME_CHARGING:
+                        log_data.chargemode_log_entry = Chargemode.TIME_CHARGING.value
                     else:
-                        log_data.chargemode_log_entry = charging_ev.data.control_parameter.chargemode
+                        log_data.chargemode_log_entry = charging_ev.data.control_parameter.chargemode.value
                 log_data.imported_since_mode_switch = chargepoint.data.get.imported - log_data.imported_at_mode_switch
                 log.debug(f"imported_since_mode_switch {log_data.imported_since_mode_switch} "
                           f"counter {chargepoint.data.get.imported}")
