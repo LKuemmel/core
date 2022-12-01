@@ -139,3 +139,11 @@ def test_missed_date_today(now: datetime.datetime, end: datetime.datetime, expec
 
     # evaluation
     assert missed == expected_missed
+
+
+def test_convert_to_unix_timestamp():
+    # setup and execution
+    unix_timestamp = timecheck.convert_to_unix_timestamp("10/31/2022, 07:00:00")
+
+    # evaluation
+    assert unix_timestamp == 1667196000

@@ -43,7 +43,7 @@ class Algorithm:
         """
         try:
             log.debug("# Algorithmus-Start")
-            evu_counter = data.data.counter_all_data.get_evu_counter()
+            evu_counter = data.data.counter_all_data.get_evu_counter_str()
             log.info(
                 f'EVU-Punkt: Leistung[W] {data.data.counter_data[evu_counter].data["get"]["power"]}, Ströme[A] '
                 f'{data.data.counter_data[evu_counter].data["get"].get("currents")}')
@@ -662,7 +662,7 @@ class Algorithm:
         dürfen nur reduziert, aber nicht abgeschaltet werden.
         """
         try:
-            evu_counter = data.data.counter_all_data.get_evu_counter()
+            evu_counter = data.data.counter_all_data.get_evu_counter_str()
             # aktuelle Werte speichern (werden wieder hergestellt, wenn das Lastmanagement die Ladung verhindert)
             counter_data_old = copy.deepcopy(data.data.counter_data)
             pv_data_old = copy.deepcopy(data.data.pv_data)
@@ -1028,61 +1028,6 @@ class Algorithm:
                             cp.data.set.charging_ev_data.data.control_parameter.submode = "stop"
             except Exception:
                 log.exception(f"Fehler im Algorithmus-Modul für Ladepunkt{cp.num}")
-
-    # Helperfunctions
-
-    def _get_preferenced_chargepoint(self, valid_chargepoints: List[Chargepoint], start_charging: bool) -> List:
-        """ermittelt die Ladepunkte in der Reihenfolge, in der sie geladen/gestoppt werden sollen. Die Bedingungen sind:
-        geringste Mindeststromstärke, niedrigster SoC, frühester Ansteck-Zeitpunkt(Einschalten)/Lademenge(Abschalten),
-        niedrigste Ladepunktnummer.
-        """
-        preferenced_chargepoints = []
-        chargepoints = dict.fromkeys(valid_chargepoints)
-        try:
-            # Bedingungen in der Reihenfolge, in der sie geprüft werden. 3. Bedingung, ist abhängig davon, ob ein- oder
-            # ausgeschaltet werden soll.
-            if start_charging:
-                condition_types = ("min_current", "soc", "plug_in", "num")
-            else:
-                condition_types = ("min_current", "soc", "imported_since_plugged", "num")
-            # Bedingung, die geprüft wird (entspricht Index von condition_types)
-            condition = 0
-            if chargepoints:
-                while len(chargepoints) > 0:
-                    # entsprechend der Bedingung die Values im Dictionary füllen
-                    if condition_types[condition] == "min_current":
-                        chargepoints.update(
-                            (cp, cp.data.set.charging_ev_data.data.control_parameter.required_current)
-                            for cp in chargepoints.keys())
-                    elif condition_types[condition] == "soc":
-                        chargepoints.update(
-                            (cp, cp.data.set.charging_ev_data.data.get.soc) for cp in chargepoints.keys())
-                    elif condition_types[condition] == "plug_in":
-                        chargepoints.update((cp, cp.data.set.plug_time) for cp in chargepoints.keys())
-                    elif condition_types[condition] == "imported_since_plugged":
-                        chargepoints.update((cp, cp.data.set.log.imported_since_plugged) for cp in chargepoints.keys())
-                    else:
-                        chargepoints.update((cp, cp.num) for cp in chargepoints.keys())
-
-                    if start_charging:
-                        # kleinsten Value im Dictionary ermitteln
-                        extreme_value = min(chargepoints.values())
-                    else:
-                        extreme_value = max(chargepoints.values())
-                    # dazugehörige Keys ermitteln
-                    extreme_cp = [
-                        key for key in chargepoints if chargepoints[key] == extreme_value]
-                    if len(extreme_cp) > 1:
-                        # Wenn es mehrere LP gibt, die den gleichen Minimalwert haben, nächste Bedingung prüfen.
-                        condition += 1
-                    else:
-                        preferenced_chargepoints.append(extreme_cp[0])
-                        chargepoints.pop(extreme_cp[0])
-
-            return preferenced_chargepoints
-        except Exception:
-            log.exception("Fehler im Algorithmus-Modul")
-            return preferenced_chargepoints
 
     def _check_cp_without_feed_in_is_prioritised(self, chargepoint: Chargepoint) -> bool:
         """ Wenn ein LP im Submodus PV-Laden nicht die Maximalstromstärke zugeteilt bekommen hat,

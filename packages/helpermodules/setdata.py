@@ -545,12 +545,6 @@ class SetData:
                 self._validate_value(msg, float, [(0, float("inf"))])
             elif "openWB/set/pv/get/power" in msg.topic:
                 self._validate_value(msg, float)
-            elif ("openWB/set/pv/set/overhang_power_left" in msg.topic or
-                    "openWB/set/pv/set/reserved_evu_overhang" in msg.topic or
-                    "openWB/set/pv/set/released_evu_overhang" in msg.topic):
-                self._validate_value(msg, float)
-            elif "openWB/set/pv/set/available_power" in msg.topic:
-                self._validate_value(msg, float)
             elif "/get/fault_state" in msg.topic:
                 self._validate_value(msg, int, [(0, 2)])
             elif "/get/fault_str" in msg.topic:
@@ -795,8 +789,10 @@ class SetData:
                   "/set/state_str" in msg.topic):
                 self._validate_value(msg, str)
             elif "/get/power" in msg.topic:
-                self._validate_value(
-                    msg, float, [(float("-inf"), float("inf"))])
+                self._validate_value(msg, float)
+            elif ("/set/reserved_surplus" in msg.topic or
+                    "set/released_surplus" in msg.topic):
+                self._validate_value(msg, float)
             else:
                 self.__unknown_topic(msg)
         except Exception:

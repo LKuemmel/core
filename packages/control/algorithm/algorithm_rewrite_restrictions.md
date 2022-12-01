@@ -1,0 +1,1 @@
+- vorerst Bt und Pv nur auf Level 1 zulässig bzw als Hybrid-System

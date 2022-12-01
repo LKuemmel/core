@@ -2,6 +2,7 @@ import threading
 import pytest
 from typing import List, Optional
 from unittest.mock import Mock
+from control.counter import Counter
 
 from control.pv import PvAll
 from control.bat import BatAll
@@ -95,7 +96,7 @@ cases = [
            timestamp_auto_phase_switch="05/16/2022, 08:35:52", phases_to_use=3, required_current=6,
            available_power=860, reserved_evu_overhang=-460, get_currents=[4.5, 4.4, 5.8],
            get_power=3381, expected_phases_to_use=3, expected_current=6,
-           expected_message="Umschaltverzögerung von 3 auf 1 Phasen abgebrochen.",
+           expected_message="Umschaltverzögerung von 3 auf 1 Phasen für 9.0 Min aktiv.",
            expected_timestamp_auto_phase_switch="05/16/2022, 08:40:52"),
     Params("3to1, not enough power, timer expired", max_current_one_phase=16,
            timestamp_auto_phase_switch="05/16/2022, 08:29:52", phases_to_use=3, required_current=6,
@@ -107,15 +108,16 @@ cases = [
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
 def test_auto_phase_switch(monkeypatch, vehicle: Ev, params: Params):
     # setup
-    mock_power_for_bat_charging = Mock(name="power_for_bat_charging", return_value=0)
-    monkeypatch.setattr(data.data.bat_data["all"], "power_for_bat_charging", mock_power_for_bat_charging)
+    mock_calc_surplus = Mock(return_value=params.available_power)
+    mock_evu = Mock(spec=Counter, calc_surplus=mock_calc_surplus, data={
+                    "set": {"reserved_surplus": params.reserved_evu_overhang}})
+    mock_get_evu_counter = Mock(name="power_for_bat_charging", return_value=mock_evu)
+    monkeypatch.setattr(data.data.counter_all_data, "get_evu_counter", mock_get_evu_counter)
 
     vehicle.ev_template.data.max_current_one_phase = params.max_current_one_phase
     vehicle.data.control_parameter.timestamp_auto_phase_switch = params.timestamp_auto_phase_switch
     vehicle.data.control_parameter.phases = params.phases_to_use
     vehicle.data.control_parameter.required_current = params.required_current
-    data.data.pv_data["all"].data["set"]["available_power"] = params.available_power
-    data.data.pv_data["all"].data["set"]["reserved_evu_overhang"] = params.reserved_evu_overhang
 
     # execution
     phases_to_use, current, message = vehicle.auto_phase_switch(0, params.get_currents, params.get_power)
