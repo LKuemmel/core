@@ -1,6 +1,7 @@
 from typing import Optional
 
-#from modules.common.component_setup import ComponentSetup
+# from modules.common.component_setup import ComponentSetup
+
 
 class MercedesEQSocToken:
     def __init__(self,
@@ -13,13 +14,14 @@ class MercedesEQSocToken:
 
 
 class MercedesEQSocConfiguration:
-    def __init__(self, client_id: Optional[str] = None, client_secret: Optional[str] = None, vin: Optional[str] = None, callbackurl: Optional[str] = None, loginurl: Optional[str] = None, token: MercedesEQSocToken = None) -> None:
+    def __init__(self, client_id: Optional[str] = None, client_secret: Optional[str] = None, vin: Optional[str] = None, callbackurl: Optional[str] = None, loginurl: Optional[str] = None, token: MercedesEQSocToken = None, code=None) -> None:
         self.client_id = client_id
         self.client_secret = client_secret
         self.vin = vin
         self.callbackurl = callbackurl
         self.loginurl = loginurl
         self.token = token or MercedesEQSocToken()
+        self.code = code
 
 
 class MercedesEQSoc:
