@@ -9,7 +9,7 @@ from control.chargemode import Chargemode
 from control import data
 from control.algorithm.algorithm import Algorithm
 from control.algorithm.algorithm import data as algorithm_data
-from control.chargepoint import CpTemplate
+from control.chargepoint_template import CpTemplate
 from control.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory
 

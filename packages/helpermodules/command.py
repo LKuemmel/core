@@ -10,6 +10,7 @@ import re
 import traceback
 from pathlib import Path
 import paho.mqtt.client as mqtt
+from control.chargepoint_template import get_autolock_plan_default, get_chargepoint_template_default
 
 from helpermodules import measurement_log
 from helpermodules.broker import InternalBrokerClient
@@ -196,7 +197,7 @@ class Command:
         """ sendet das Topic, zu dem eine neue Ladepunkt-Vorlage erstellt werden soll.
         """
         new_id = self.max_id_chargepoint_template + 1
-        default = chargepoint.get_chargepoint_template_default()
+        default = get_chargepoint_template_default()
         default["id"] = new_id
         Pub().pub(f'openWB/set/chargepoint/template/{new_id}', default)
         self.max_id_chargepoint_template = self.max_id_chargepoint_template + 1
@@ -229,7 +230,7 @@ class Command:
         """ sendet das Topic, zu dem ein neuer Zielladen-Plan erstellt werden soll.
         """
         new_id = self.max_id_autolock_plan + 1
-        default = chargepoint.get_autolock_plan_default()
+        default = get_autolock_plan_default()
         Pub().pub(f'openWB/set/chargepoint/template/{payload["data"]["template"]}/autolock/{new_id}',
                   default)
         self.max_id_autolock_plan = new_id

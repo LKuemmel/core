@@ -8,12 +8,13 @@ import subprocess
 import time
 from typing import List
 from paho.mqtt.client import Client as MqttClient, MQTTMessage
+from control.chargepoint_template import get_chargepoint_template_default
 
 from helpermodules.broker import InternalBrokerClient
 from helpermodules.pub import Pub
 from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
 from helpermodules import measurement_log
-from control import chargepoint, counter_all
+from control import counter_all
 from control import ev
 
 log = logging.getLogger(__name__)
@@ -254,7 +255,7 @@ class UpdateConfig:
                    ]
     default_topic = (
         ("openWB/chargepoint/get/power", 0),
-        ("openWB/chargepoint/template/0", chargepoint.get_chargepoint_template_default()),
+        ("openWB/chargepoint/template/0", get_chargepoint_template_default()),
         ("openWB/counter/get/hierarchy", []),
         ("openWB/counter/config/reserve_for_not_charging", counter_all.Config().reserve_for_not_charging),
         ("openWB/vehicle/0/name", ev.EvData().name),

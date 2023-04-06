@@ -16,6 +16,9 @@ from control import counter
 from control import counter_all
 from control import ev
 from control import general
+from control.chargepoint_all import AllChargepoints
+from control.chargepoint_state_update import ChargepointStateUpdate
+from control.chargepoint_template import CpTemplate
 from helpermodules import graph
 from helpermodules.abstract_plans import AutolockPlan
 from helpermodules.broker import InternalBrokerClient
@@ -39,8 +42,8 @@ class SubData:
 
     # Instanzen
     cp_data: Dict[str, chargepoint.Chargepoint] = {}
-    cp_all_data = chargepoint.AllChargepoints()
-    cp_template_data: Dict[str, chargepoint.CpTemplate] = {}
+    cp_all_data = AllChargepoints()
+    cp_template_data: Dict[str, CpTemplate] = {}
     pv_data: Dict[str, pv.Pv] = {}
     pv_all_data = pv_all.PvAll()
     ev_data: Dict[str, ev.Ev] = {}
@@ -343,7 +346,7 @@ class SubData:
                         var.pop("cp"+index)
                 else:
                     if "cp"+index not in var:
-                        var["cp"+index] = chargepoint.ChargepointStateUpdate(
+                        var["cp"+index] = ChargepointStateUpdate(
                             int(index),
                             self.event_copy_data,
                             self.event_global_data_initialized,

@@ -8,7 +8,9 @@ import threading
 from typing import Dict
 from control.bat import Bat
 from control.bat_all import BatAll
-from control.chargepoint import AllChargepoints, Chargepoint, CpTemplate
+from control.chargepoint import Chargepoint
+from control.chargepoint_all import AllChargepoints
+from control.chargepoint_template import CpTemplate
 from control.pv import Pv
 from control.pv_all import PvAll
 
