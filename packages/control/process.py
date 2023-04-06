@@ -32,8 +32,7 @@ class Process:
                         cp.initiate_control_pilot_interruption()
                         cp.initiate_phase_switch()
                         self._update_state(cp)
-                        if control_parameter.state == ChargepointState.NO_CHARGING_ALLOWED and cp.data.set.current != 0:
-                            control_parameter.state = ChargepointState.CHARGING_ALLOWED
+                        cp.start_charging()
                     else:
                         # LP, an denen nicht geladen werden darf
                         if cp.data.set.charging_ev_prev != -1:
@@ -41,7 +40,7 @@ class Process:
                                 cp, data.data.ev_data
                                 ["ev" + str(cp.data.set.charging_ev_prev)],
                                 immediately=False)
-                        cp.data.set.current = 0
+                        cp.stop_charging()
                         Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/set/current", 0)
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                     if cp.data.get.state_str is not None:
@@ -96,7 +95,7 @@ class Process:
             current = 0
 
         # Unstimmige Werte loggen
-        if (charging_ev.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY and
+        if (charging_ev.data.control_parameter.state == chargepoint.switch_on_delay and
                 data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus == 0):
             log.error("Reservierte Leistung kann am Algorithmus-Ende nicht 0 sein.")
         if (chargepoint.data.set.charging_ev_data.ev_template.data.prevent_phase_switch and

@@ -128,7 +128,7 @@ class SurplusControlled:
                     evu_counter.switch_off_check_threshold(cp)
                 if control_parameter.state == ChargepointState.SWITCH_OFF_DELAY:
                     evu_counter.switch_off_check_timer(cp)
-                if control_parameter.state == ChargepointState.SWITCH_ON_DELAY:
+                if control_parameter.state == cp.switch_on_delay:
                     # Wenn charge_state False und set_current > 0, will Auto nicht laden
                     evu_counter.switch_on_timer_expired(cp)
                 if control_parameter.state not in CHARGING_STATES:

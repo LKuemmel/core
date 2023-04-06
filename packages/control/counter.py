@@ -197,12 +197,6 @@ class Counter:
             available_power = surplus + control_range_center
         return available_power
 
-    SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle von {}W während der Einschaltverzögerung unterschritten."
-    SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald nach {}s die Einschaltverzögerung abgelaufen ist."
-    SWITCH_ON_NOT_EXCEEDED = ("Die Ladung kann nicht gestartet werden, da die Einschaltschwelle {}W nicht erreicht "
-                              "wird.")
-    SWITCH_ON_EXPIRED = "Einschaltschwelle von {}W für die Dauer der Einschaltverzögerung überschritten."
-
     def calc_switch_on_power(self, chargepoint: Chargepoint) -> Tuple[float, float]:
         surplus = self.data.set.surplus_power_left - self.data.set.reserved_surplus
         control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
@@ -214,44 +208,24 @@ class Counter:
             threshold = pv_config.switch_on_threshold*control_parameter.phases
         return surplus, threshold
 
+    SWITCH_ON_NOT_EXCEEDED = ("Die Ladung kann nicht gestartet werden, da die Einschaltschwelle {}W nicht erreicht "
+                              "wird.")
+
     def switch_on_threshold_reached(self, chargepoint: Chargepoint) -> None:
         try:
-            message = None
             control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
-            feed_in_limit = chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.\
-                feed_in_limit
             pv_config = data.data.general_data.data.chargemode_config.pv_charging
-            timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
 
-            surplus, threshold = self.calc_switch_on_power(chargepoint)
-            if control_parameter.state == ChargepointState.SWITCH_ON_DELAY:
-                # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_surplus rausrechnen,
-                # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
-                required_power = (chargepoint.data.set.charging_ev_data.ev_template.data.
-                                  min_current * control_parameter.phases * 230)
-                if surplus + required_power <= threshold:
-                    # Einschaltschwelle wurde unterschritten, Timer zurücksetzen
-                    timestamp_switch_on_off = None
-                    self.data.set.reserved_surplus -= threshold
-                    message = self.SWITCH_ON_FALLEN_BELOW.format(pv_config.switch_on_threshold)
-                    control_parameter.state = ChargepointState.CHARGING_ALLOWED
+            if control_parameter.state == chargepoint.switch_on_delay:
+                chargepoint.stop_switch_on_delay(self)
             else:
-                # Timer starten
-                if (surplus >= threshold) and ((feed_in_limit and self.data.set.reserved_surplus == 0) or
-                                               not feed_in_limit):
-                    timestamp_switch_on_off = timecheck.create_timestamp()
-                    self.data.set.reserved_surplus += threshold
-                    message = self.SWITCH_ON_WAITING.format(pv_config.switch_on_delay)
-                    control_parameter.state = ChargepointState.SWITCH_ON_DELAY
-                else:
+                try:
+                    # Timer starten
+                    chargepoint.start_switch_on_delay(self)
+                except:
                     # Einschaltschwelle nicht erreicht
-                    message = self.SWITCH_ON_NOT_EXCEEDED.format(pv_config.switch_on_threshold)
+                    chargepoint.set_state_and_log(self.SWITCH_ON_NOT_EXCEEDED.format(pv_config.switch_on_threshold))
 
-            if timestamp_switch_on_off != control_parameter.timestamp_switch_on_off:
-                control_parameter.timestamp_switch_on_off = timestamp_switch_on_off
-                Pub().pub(f"openWB/set/vehicle/{chargepoint.data.set.charging_ev_data.num}/control_parameter/"
-                          f"timestamp_switch_on_off", timestamp_switch_on_off)
-            chargepoint.set_state_and_log(message)
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 

@@ -54,7 +54,7 @@ class AllChargepoints:
                                 control_parameter.state != ChargepointState.PERFORMING_PHASE_SWITCH and
                                 control_parameter.state != ChargepointState.PHASE_SWITCH_DELAY and
                                 control_parameter.state != ChargepointState.SWITCH_OFF_DELAY and
-                                control_parameter.state != ChargepointState.SWITCH_ON_DELAY)):
+                                control_parameter.state != chargepoint.switch_on_delay)):
                         continue
                     else:
                         break

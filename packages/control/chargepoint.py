@@ -21,6 +21,8 @@ import threading
 import traceback
 from typing import Dict, List, Optional, Tuple
 
+from statemachine import State
+
 from control import chargelog
 from control import cp_interruption
 from control import data
@@ -249,7 +251,7 @@ class ChargepointData:
         self.__dict__.update(state)
 
 
-class Chargepoint:
+class Chargepoint(StateMachine):
     """ geht alle Ladepunkte durch, prüft, ob geladen werden darf und ruft die Funktion des angesteckten Autos auf.
     """
 
@@ -806,7 +808,7 @@ class Chargepoint:
                                   f'{charging_ev.charge_template.data.chargemode.selected}, Submodus: '
                                   f'{charging_ev.data.control_parameter.submode}')
                     else:
-                        if (charging_ev.data.control_parameter.state == ChargepointState.SWITCH_ON_DELAY and
+                        if (charging_ev.data.control_parameter.state == self.switch_on_delay and
                                 data.data.counter_all_data.get_evu_counter().data.set.reserved_surplus == 0):
                             log.error("Reservierte Leistung kann nicht 0 sein.")
 
@@ -950,3 +952,79 @@ class Chargepoint:
     def cp_ev_support_phase_switch(self) -> bool:
         return (self.data.config.auto_phase_switch_hw and
                 self.data.set.charging_ev_data.ev_template.data.prevent_phase_switch is False)
+
+    # States
+    no_charging_allowed = State(initial=True)
+    phase_switch_delay = State()
+    performing_phase_switch = State()
+    wait_for_using_phases = State()
+    charging_allowed = State()
+    switch_off_delay = State()
+    switch_on_delay = State()
+    phase_switch_delay_expired = State()
+
+    # Transitions
+    start_charging = no_charging_allowed.to(charging_allowed, cond="cond_start_charging")
+    start_switch_on_delay = no_charging_allowed.to(switch_on_delay, validators="cond_start_switch_on_delay")
+    # = switch_on_delay.to(charging_allowed)
+    stop_switch_on_delay = switch_on_delay.to(no_charging_allowed, cond="cond_stop_switch_on_delay")
+    stop_charging = (charging_allowed.to(no_charging_allowed, cond="cond_stop_charging") |
+                     switch_off_delay.to(no_charging_allowed, cond="cond_stop_charging"))
+    start_switch_off_delay = charging_allowed.to(switch_off_delay)
+    # = charging_allowed.to(phase_switch_delay)
+    # = charging_allowed.to(performing_phase_switch)
+    # = switch_off_delay.to(charging_allowed)
+    # = phase_switch_delay.to(phase_switch_delay_expired)
+    # = phase_switch_delay.to(charging_allowed)
+    # = phase_switch_delay_expired.to(performing_phase_switch)
+    # = performing_phase_switch.to(wait_for_using_phases)
+    # = wait_for_using_phases.to(charging_allowed)
+
+    def cond_start_charging(self):
+        return self.data.set.current != 0
+
+    def cond_stop_charging(self):
+        return self.data.set.current == 0
+
+    SWITCH_ON_FALLEN_BELOW = "Einschaltschwelle von {}W während der Einschaltverzögerung unterschritten."
+    SWITCH_ON_WAITING = "Die Ladung wird gestartet, sobald nach {}s die Einschaltverzögerung abgelaufen ist."
+    
+    SWITCH_ON_EXPIRED = "Einschaltschwelle von {}W für die Dauer der Einschaltverzögerung überschritten."
+
+    def cond_start_switch_on_delay(self, counter):
+        feed_in_limit = self.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit
+        surplus, threshold = counter.calc_switch_on_power(self)
+        return ((surplus >= threshold) and ((feed_in_limit and self.data.set.reserved_surplus == 0) or
+                                            not feed_in_limit))
+
+    def after_start_switch_on_delay(self, counter):
+        control_parameter = self.data.set.charging_ev_data.data.control_parameter
+        pv_config = data.data.general_data.data.chargemode_config.pv_charging
+        timestamp_switch_on_off = timecheck.create_timestamp()
+        counter.data.set.reserved_surplus += counter.calc_switch_on_power(self)[1]
+        self.set_state_and_log(self.SWITCH_ON_WAITING.format(pv_config.switch_on_delay))
+        if timestamp_switch_on_off != control_parameter.timestamp_switch_on_off:
+            control_parameter.timestamp_switch_on_off = timestamp_switch_on_off
+            Pub().pub(f"openWB/set/vehicle/{self.data.set.charging_ev_data.num}/control_parameter/"
+                      f"timestamp_switch_on_off", timestamp_switch_on_off)
+
+    def cond_stop_switch_on_delay(self, counter):
+        control_parameter = self.data.set.charging_ev_data.data.control_parameter
+        surplus, threshold = counter.calc_switch_on_power(self)
+        # Wurde die Einschaltschwelle erreicht? Reservierte Leistung aus all_surplus rausrechnen,
+        # da diese Leistung ja schon reserviert wurde, als die Einschaltschwelle erreicht wurde.
+        required_power = (self.data.set.charging_ev_data.ev_template.data.
+                          min_current * control_parameter.phases * 230)
+        return surplus + required_power <= threshold
+
+    def after_stop_switch_on_delay(self, counter):
+        # Einschaltschwelle wurde unterschritten, Timer zurücksetzen
+        pv_config = data.data.general_data.data.chargemode_config.pv_charging
+        control_parameter = self.data.set.charging_ev_data.data.control_parameter
+        counter.data.set.reserved_surplus -= counter.calc_switch_on_power(self)[1]
+        timestamp_switch_on_off = None
+        self.set_state_and_log(self.SWITCH_ON_FALLEN_BELOW.format(pv_config.switch_on_threshold))
+        if timestamp_switch_on_off != control_parameter.timestamp_switch_on_off:
+            control_parameter.timestamp_switch_on_off = timestamp_switch_on_off
+            Pub().pub(f"openWB/set/vehicle/{self.data.set.charging_ev_data.num}/control_parameter/"
+                      f"timestamp_switch_on_off", timestamp_switch_on_off)
