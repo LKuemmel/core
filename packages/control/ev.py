@@ -15,7 +15,7 @@ from control import data
 from control.bat_all import SwitchOnBatState
 from control.chargemode import Chargemode as Chargemode_enum
 from control.chargepoint_state import ChargepointState, PHASE_SWITCH_STATES
-from dataclass_utils.factories import currents_list_factory, empty_dict_factory, emtpy_list_factory
+from dataclass_utils.factories import empty_dict_factory, emtpy_list_factory
 from helpermodules.abstract_plans import Limit, limit_factory, ScheduledChargingPlan, TimeChargingPlan
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -130,23 +130,6 @@ def ev_template_data_factory() -> EvTemplateData:
 
 
 @dataclass
-class ControlParameter:
-    required_current: float = 0
-    required_currents: List[float] = field(default_factory=currents_list_factory)
-    phases: int = 0
-    prio: bool = False
-    timestamp_switch_on_off: Optional[str] = None
-    timestamp_auto_phase_switch: Optional[str] = None
-    timestamp_perform_phase_switch: Optional[str] = None
-    submode: Chargemode_enum = Chargemode_enum.STOP
-    chargemode: Chargemode_enum = Chargemode_enum.STOP
-    used_amount_instant_charging: float = 0
-    imported_at_plan_start: float = 0
-    current_plan: Optional[str] = None
-    state: ChargepointState = ChargepointState.NO_CHARGING_ALLOWED
-
-
-@dataclass
 class EvTemplate:
     """ Klasse mit den EV-Daten
     """
@@ -179,10 +162,6 @@ class Get:
     fault_str: str = ""
 
 
-def control_parameter_factory() -> ControlParameter:
-    return ControlParameter()
-
-
 def get_factory() -> Get:
     return Get()
 
@@ -190,7 +169,6 @@ def get_factory() -> Get:
 @dataclass
 class EvData:
     set: Set = field(default_factory=set_factory)
-    control_parameter: ControlParameter = field(default_factory=control_parameter_factory)
     charge_template: int = 0
     ev_template: int = 0
     name: str = "Standard-Fahrzeug"
