@@ -205,7 +205,7 @@ class Counter:
 
     def calc_switch_on_power(self, chargepoint: Chargepoint) -> Tuple[float, float]:
         surplus = self.data.set.surplus_power_left - self.data.set.reserved_surplus
-        control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
+        control_parameter = chargepoint.data.control_parameter
         pv_config = data.data.general_data.data.chargemode_config.pv_charging
 
         if chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.feed_in_limit:
@@ -217,7 +217,7 @@ class Counter:
     def switch_on_threshold_reached(self, chargepoint: Chargepoint) -> None:
         try:
             message = None
-            control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
+            control_parameter = chargepoint.data.control_parameter
             feed_in_limit = chargepoint.data.set.charging_ev_data.charge_template.data.chargemode.pv_charging.\
                 feed_in_limit
             pv_config = data.data.general_data.data.chargemode_config.pv_charging
@@ -249,7 +249,7 @@ class Counter:
 
             if timestamp_switch_on_off != control_parameter.timestamp_switch_on_off:
                 control_parameter.timestamp_switch_on_off = timestamp_switch_on_off
-                Pub().pub(f"openWB/set/vehicle/{chargepoint.data.set.charging_ev_data.num}/control_parameter/"
+                Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/control_parameter/"
                           f"timestamp_switch_on_off", timestamp_switch_on_off)
             chargepoint.set_state_and_log(message)
         except Exception:
@@ -267,7 +267,7 @@ class Counter:
         try:
             msg = None
             pv_config = data.data.general_data.data.chargemode_config.pv_charging
-            control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
+            control_parameter = chargepoint.data.control_parameter
             # Timer ist noch nicht abgelaufen
             if timecheck.check_timestamp(control_parameter.timestamp_switch_on_off,
                                          pv_config.switch_on_delay):
@@ -278,7 +278,7 @@ class Counter:
                 self.data.set.reserved_surplus -= pv_config.switch_on_threshold*control_parameter.phases
                 msg = self.SWITCH_ON_EXPIRED.format(pv_config.switch_on_threshold)
                 Pub().pub(
-                    "openWB/set/vehicle/" + str(chargepoint.data.set.charging_ev_data.num) +
+                    "openWB/set/vehicle/" + str(chargepoint.num) +
                     "/control_parameter/timestamp_switch_on_off", None)
                 control_parameter.state = ChargepointState.CHARGING_ALLOWED
             chargepoint.set_state_and_log(msg)
@@ -296,7 +296,7 @@ class Counter:
         try:
             msg = None
             pv_config = data.data.general_data.data.chargemode_config.pv_charging
-            control_parameter = chargepoint.data.set.charging_ev_data.data.control_parameter
+            control_parameter = chargepoint.data.control_parameter
 
             if control_parameter.timestamp_switch_on_off is not None:
                 if not timecheck.check_timestamp(
@@ -306,7 +306,7 @@ class Counter:
                     self.data.set.released_surplus -= chargepoint.data.set.required_power
                     msg = self.SWITCH_OFF_STOP
                     Pub().pub(
-                        "openWB/set/vehicle/" + str(chargepoint.data.set.charging_ev_data.num) +
+                        "openWB/set/chargepoint/" + str(chargepoint.num) +
                         "/control_parameter/timestamp_switch_on_off", None)
                     control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
                 else:
@@ -341,7 +341,7 @@ class Counter:
         charge = True
         msg = None
         charging_ev_data = chargepoint.data.set.charging_ev_data
-        control_parameter = charging_ev_data.data.control_parameter
+        control_parameter = chargepoint.data.control_parameter
         timestamp_switch_on_off = control_parameter.timestamp_switch_on_off
 
         power_in_use, threshold = self.calc_switch_off(chargepoint)
@@ -405,10 +405,10 @@ class Counter:
             EV, das dem Ladepunkt zugeordnet ist
         """
         try:
-            if charging_ev.data.control_parameter.timestamp_switch_on_off is not None:
-                charging_ev.data.control_parameter.timestamp_switch_on_off = None
+            if chargepoint.data.control_parameter.timestamp_switch_on_off is not None:
+                chargepoint.data.control_parameter.timestamp_switch_on_off = None
                 evu_counter = data.data.counter_all_data.get_evu_counter()
-                Pub().pub("openWB/set/vehicle/"+str(charging_ev.num) +
+                Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num) +
                           "/control_parameter/timestamp_switch_on_off", None)
                 # Wenn bereits geladen wird, freigegebene Leistung freigeben. Wenn nicht geladen wird, reservierte
                 # Leistung freigeben.
@@ -418,7 +418,7 @@ class Counter:
                                                               * chargepoint.data.set.phases_to_use)
                 else:
                     evu_counter.data.set.released_surplus -= (pv_config.switch_on_threshold
-                                                              * charging_ev.data.control_parameter.phases)
+                                                              * chargepoint.data.control_parameter.phases)
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")
 

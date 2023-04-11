@@ -23,7 +23,7 @@ class Process:
             log.info("# Ladung starten.")
             for cp in data.data.cp_data.values():
                 try:
-                    control_parameter = cp.data.set.charging_ev_data.data.control_parameter
+                    control_parameter = cp.data.control_parameter
                     cp.remember_previous_values()
                     if cp.data.set.charging_ev != -1:
                         # Ladelog-Daten müssen vor dem Setzen des Stroms gesammelt werden,
@@ -51,14 +51,10 @@ class Process:
                         Pub().pub(
                             f"openWB/set/chargepoint/{cp.num}/get/state_str", "Ladevorgang läuft...")
                     modules_threads.append(self._start_charging(cp))
+                    Pub().pub(f"openWB/set/chargepoint/{cp.num}/control_parameter/state",
+                              cp.data.control_parameter.state)
                 except Exception:
                     log.exception("Fehler im Process-Modul für Ladepunkt "+str(cp))
-            for ev in data.data.ev_data.values():
-                try:
-                    Pub().pub(f"openWB/set/vehicle/{ev.num}/control_parameter/state",
-                              ev.data.control_parameter.state)
-                except Exception:
-                    log.exception("Fehler im Process-Modul für EV "+str(ev.num))
 
             if modules_threads:
                 for thread in modules_threads:

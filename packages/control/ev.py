@@ -191,41 +191,6 @@ class Ev:
         except Exception:
             log.exception("Fehler im ev-Modul "+str(self.num))
 
-    def reset_ev(self):
-        """ setzt alle Werte zurück, die während des Algorithmus gesetzt werden.
-        """
-        try:
-            log.debug("EV "+str(self.num)+" zurückgesetzt.")
-            Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/required_current", 0)
-            Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/timestamp_auto_phase_switch", None)
-            Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/timestamp_perform_phase_switch", None)
-            Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/submode", "stop")
-            Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/chargemode", "stop")
-            Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/used_amount_instant_charging", 0)
-            Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/imported_at_plan_start", 0)
-            Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/current_plan", None)
-            Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/state", ChargepointState.NO_CHARGING_ALLOWED)
-            self.data.control_parameter.required_current = 0
-            self.data.control_parameter.timestamp_auto_phase_switch = None
-            self.data.control_parameter.timestamp_perform_phase_switch = None
-            self.data.control_parameter.submode = "stop"
-            self.data.control_parameter.chargemode = "stop"
-            self.data.control_parameter.used_amount_instant_charging = 0
-            self.data.control_parameter.imported_at_plan_start = 0
-            self.data.control_parameter.current_plan = None
-            self.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
-        except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.num))
-
     def soc_interval_expired(self, charge_state: bool) -> bool:
         request_soc = False
         if self.data.get.soc_timestamp == "":
@@ -350,35 +315,6 @@ class Ev:
             log.debug("Änderung des Lademodus")
         else:
             self.chargemode_changed = False
-
-    def set_control_parameter(self, submode, required_current):
-        """ setzt die Regel-Parameter, die der Algorithmus verwendet.
-
-        Parameter
-        ---------
-        submode: str
-            neuer Lademodus, in dem geladen werden soll
-        """
-        try:
-            self.data.control_parameter.submode = Chargemode_enum(submode)
-            Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/submode", submode)
-            if submode == "time_charging":
-                self.data.control_parameter.chargemode = Chargemode_enum.TIME_CHARGING
-                Pub().pub(f"openWB/set/vehicle/{self.num}/control_parameter/chargemode",
-                          Chargemode_enum.TIME_CHARGING.value)
-            else:
-                self.data.control_parameter.chargemode = Chargemode_enum(self.charge_template.data.chargemode.selected)
-                Pub().pub("openWB/set/vehicle/"+str(self.num)+"/control_parameter/chargemode",
-                          self.charge_template.data.chargemode.selected)
-            self.data.control_parameter.prio = self.charge_template.data.prio
-            Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/prio", self.charge_template.data.prio)
-            self.data.control_parameter.required_current = required_current
-            Pub().pub("openWB/set/vehicle/"+str(self.num) +
-                      "/control_parameter/required_current", required_current)
-        except Exception:
-            log.exception("Fehler im ev-Modul "+str(self.num))
 
     def check_min_max_current(
             self, required_current: float, phases: int, pv: bool = False) -> Tuple[float, Optional[str]]:

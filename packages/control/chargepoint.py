@@ -507,7 +507,7 @@ class Chargepoint:
         # werden soll (-1), Daten zurücksetzen.
         if self.data.set.charging_ev_prev != -1:
             # Daten zurücksetzen, wenn nicht geladen werden soll.
-            data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)].reset_ev()
+            self.reset_control_parameter()
             data.data.counter_all_data.get_evu_counter().reset_switch_on_off(
                 self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
             # Abstecken
@@ -539,6 +539,72 @@ class Chargepoint:
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/current", 0)
         self.data.set.energy_to_charge = 0
         Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/energy_to_charge", 0)
+
+    def reset_control_parameter(self):
+        """ setzt alle Werte zurück, die während des Algorithmus gesetzt werden.
+        """
+        try:
+            log.debug(f"Regelungsparameter von LP {self.num} zurückgesetzt.")
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/control_parameter/required_current", 0)
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/control_parameter/timestamp_auto_phase_switch", None)
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/control_parameter/timestamp_perform_phase_switch", None)
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/control_parameter/submode", "stop")
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/control_parameter/chargemode", "stop")
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/control_parameter/used_amount_instant_charging", 0)
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/control_parameter/imported_at_plan_start", 0)
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/control_parameter/current_plan", None)
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/control_parameter/state", ChargepointState.NO_CHARGING_ALLOWED)
+            self.data.control_parameter.required_current = 0
+            self.data.control_parameter.timestamp_auto_phase_switch = None
+            self.data.control_parameter.timestamp_perform_phase_switch = None
+            self.data.control_parameter.submode = "stop"
+            self.data.control_parameter.chargemode = "stop"
+            self.data.control_parameter.used_amount_instant_charging = 0
+            self.data.control_parameter.imported_at_plan_start = 0
+            self.data.control_parameter.current_plan = None
+            self.data.control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
+        except Exception:
+            log.exception("Fehler im cp-Modul "+str(self.num))
+
+    def set_control_parameter(self, submode, required_current):
+        """ setzt die Regel-Parameter, die der Algorithmus verwendet.
+
+        Parameter
+        ---------
+        submode: str
+            neuer Lademodus, in dem geladen werden soll
+        """
+        try:
+            charging_ev = self.data.set.charging_ev_data
+            self.data.control_parameter.submode = Chargemode_enum(submode)
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/control_parameter/submode", submode)
+            if submode == "time_charging":
+                self.data.control_parameter.chargemode = Chargemode_enum.TIME_CHARGING
+                Pub().pub(f"openWB/set/chargepoint/{self.num}/control_parameter/chargemode",
+                          Chargemode_enum.TIME_CHARGING.value)
+            else:
+                self.data.control_parameter.chargemode = Chargemode_enum(
+                    charging_ev.charge_template.data.chargemode.selected)
+                Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/control_parameter/chargemode",
+                          charging_ev.charge_template.data.chargemode.selected)
+            self.data.control_parameter.prio = charging_ev.charge_template.data.prio
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/control_parameter/prio", charging_ev.charge_template.data.prio)
+            self.data.control_parameter.required_current = required_current
+            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
+                      "/control_parameter/required_current", required_current)
+        except Exception:
+            log.exception("Fehler im ev-Modul "+str(self.num))
 
     def remember_previous_values(self):
         self.data.set.plug_state_prev = self.data.get.plug_state
@@ -883,7 +949,7 @@ class Chargepoint:
                     required_current = self.check_min_max_current(
                         required_current, self.data.control_parameter.phases)
                     charging_ev.set_chargemode_changed(submode)
-                    charging_ev.set_control_parameter(submode, required_current)
+                    self.set_control_parameter(submode, required_current)
                     self.set_required_currents(required_current)
 
                     if charging_ev.chargemode_changed:
