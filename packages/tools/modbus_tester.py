@@ -10,10 +10,12 @@ start = int(sys.argv[4])
 length = int(sys.argv[5])
 data_type = sys.argv[6]
 func = int(sys.argv[7])
+connection = sys.argv[8]
 
 
 print(time.strftime("%Y-%m-%d %H:%M:%S modbus-tester"))
 print("Parameter:")
+print("Verbindung: " + connection)
 print("Host: " + host)
 print("Port: " + str(port))
 print("Modbus ID: " + str(slave_id))
@@ -22,7 +24,10 @@ print("Anzahl: " + str(length))
 print("Datentyp: " + data_type)
 print("Funktion: " + str(func) + "\n")
 try:
-    client = modbus.ModbusTcpClient_(host, port=port)
+    if connection == "serial":
+        client = modbus.ModbusSerialClient_(port=port)
+    else:
+        client = modbus.ModbusTcpClient_(host, port=port)
     if func == 4:
         if length > 1:
             resp = client.read_input_registers(start, [modbus.ModbusDataType[data_type]]*length, unit=slave_id)

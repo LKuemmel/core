@@ -13,6 +13,7 @@
 				exit('Diese Seite muss als HTTP-POST aufgerufen werden.');
 			}
 
+			$connection = escapeshellarg($_POST['connection']);
 			$host = escapeshellarg($_POST['host']);
 			$port = escapeshellarg($_POST['port']);
 			$start = escapeshellarg($_POST['start']);
@@ -22,7 +23,7 @@
 			$function_code = escapeshellarg($_POST['function']);
 
 			$command = escapeshellcmd("PYTHONPATH=\"" . $_SERVER['DOCUMENT_ROOT'] . "/openWB/packages\" python3 " . $_SERVER['DOCUMENT_ROOT'] . "/openWB/packages/tools/modbus_tester.py");
-			$output = shell_exec(join(" ", [$command, $host, $port, $modbus_id, $start, $length, $data_type, $function_code]));
+			$output = shell_exec(join(" ", [$command, $host, $port, $modbus_id, $start, $length, $data_type, $function_code, $connection]));
 			echo htmlspecialchars($output);
 			?></pre>
 </body>
