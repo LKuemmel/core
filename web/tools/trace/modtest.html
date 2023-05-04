@@ -8,12 +8,19 @@
 
 <body>
 	<form action="modbus_test.php" method="post">
-		<p>IP-Adresse oder Hostname des Modbusgeräts : <input type="text" name="host" required /></p>
-		<p>Port des Modbusgeräts (normalerweise 502) : <input type="number" min="1" name="port" value="502" required />
+		<p>Modbus-Verbindung:
+			<select name="connection" required>
+				<option value="tcp">TCP-Verbindung</option>
+				<option value="serial">Serielle Verbindung</option>
+			</select>
+		</p>
+		<p>IP-Adresse oder Hostname des Modbusgeräts (nur bei TCP-Verbindung erfoderlich): <input type="text"
+				name="host" required /></p>
+		<p>Port des Modbusgeräts (normalerweise 502): <input type="number" min="1" name="port" value="502" required />
 		</p>
 		<p>Modbus ID (normalerweise 1): <input type="number" min="1" name="id" value="1" required /></p>
 		<p>Startadresse: <input type="number" min="1" name="start" required /></p>
-		<p>Anzahl: <input type="number" min="1" name="length" required value="1"/></p>
+		<p>Anzahl: <input type="number" min="1" name="length" required value="1" /></p>
 		<p>Datentyp:
 			<select name="data_type" required>
 				<optgroup label="unsigned integer">
