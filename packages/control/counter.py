@@ -204,12 +204,27 @@ class Counter:
         evu_counter = data.data.counter_all_data.get_evu_counter()
         bat_surplus = data.data.bat_all_data.power_for_bat_charging()
         disengageable_smarthome_power = data.data.counter_all_data.data.set.disengageable_smarthome_power
+        unused_evse_power = self._unused_evse_power()
         raw_power_left = evu_counter.data.set.raw_power_left
         max_power = evu_counter.data.config.max_total_power
-        surplus = raw_power_left - max_power + bat_surplus + disengageable_smarthome_power
+        surplus = raw_power_left - max_power + bat_surplus + disengageable_smarthome_power + unused_evse_power
         ranged_surplus = max(self._control_range(surplus), 0)
         log.info(f"Überschuss zur PV-geführten Ladung: {ranged_surplus}W")
         return ranged_surplus
+
+    def _unused_evse_power(self) -> float:
+        """Wenn Autos nicht die volle Ladeleistung nutzen, wird unnötig eingespeist. Dann kann um den noch nicht
+        genutzten Sollstrom hochgeregelt werden."""
+        unused_evse_power = 0
+        for cp in data.data.cp_data.values():
+            evse_current = cp.data.get.evse_current
+            if evse_current:
+                formatted_evse_current = evse_current if evse_current < 32 else evse_current / 100
+                for i in range(0, 3):
+                    unused_current = max(formatted_evse_current - cp.data.get.currents[i], 0)
+                    unused_evse_power += unused_current*cp.data.get.voltages
+        log.debug(f"Ungenutzte Leistung der Ladepunkte: {unused_evse_power}W")
+        return unused_evse_power
 
     def _control_range(self, surplus):
         control_range_low = data.data.general_data.data.chargemode_config.pv_charging.control_range[0]
