@@ -220,7 +220,7 @@ class Counter:
             evse_current = cp.data.get.evse_current
             if evse_current:
                 formatted_evse_current = evse_current if evse_current < 32 else evse_current / 100
-                for i in range(0, 3):
+                for i in range(0, cp.data.get.phases_in_use):
                     unused_current = max(formatted_evse_current - cp.data.get.currents[i], 0)
                     unused_evse_power += unused_current*cp.data.get.voltages[i]
         log.debug(f"Ungenutzte Leistung der Ladepunkte: {unused_evse_power}W")
