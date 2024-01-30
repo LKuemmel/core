@@ -163,6 +163,10 @@ class ChargepointState:
         self.evse_current = evse_current
         self.vehicle_id = vehicle_id
 
+        @cp_data.setter
+        def cp_data(self, value):
+            self._cp_data = value
+
 
 @auto_str
 class TariffState:
