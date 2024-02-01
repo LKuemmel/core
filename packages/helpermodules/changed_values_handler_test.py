@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from control.chargepoint.chargepoint_state import ChargepointState
-from dataclass_utils.factories import currents_list_factory
+from dataclass_utils.factories import empty_three_phase_list_factory
 from helpermodules.changed_values_handler import ChangedValuesHandler
 
 NONE_TYPE = type(None)
@@ -52,7 +52,7 @@ class SampleData:
     sample_field_int: int = field(default=0, metadata={"topic": "get/field_int", "mutable_by_algorithm": True})
     sample_field_immutable: float = field(
         default=0, metadata={"topic": "get/field_immutable", "mutable_by_algorithm": False})
-    sample_field_list: List = field(default_factory=currents_list_factory, metadata={
+    sample_field_list: List = field(default_factory=empty_three_phase_list_factory, metadata={
                                     "topic": "get/field_list", "mutable_by_algorithm": True})
     sample_field_nested: SampleNested = field(default_factory=sample_nested)
     sample_field_none: Optional[str] = field(

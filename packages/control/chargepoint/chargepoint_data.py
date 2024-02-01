@@ -5,7 +5,7 @@ from control.chargepoint.chargepoint_template import CpTemplate
 
 from control.chargepoint.control_parameter import ControlParameter, control_parameter_factory
 from control.ev import Ev
-from dataclass_utils.factories import currents_list_factory, empty_dict_factory, voltages_list_factory
+from dataclass_utils.factories import empty_three_phase_list_factory, empty_dict_factory, voltages_list_factory
 from helpermodules.constants import NO_ERROR
 from modules.common.abstract_chargepoint import AbstractChargepoint
 
@@ -86,7 +86,7 @@ def connected_vehicle_factory() -> ConnectedVehicle:
 class Get:
     charge_state: bool = False
     connected_vehicle: ConnectedVehicle = field(default_factory=connected_vehicle_factory)
-    currents: List[float] = field(default_factory=currents_list_factory)
+    currents: List[float] = field(default_factory=empty_three_phase_list_factory)
     daily_imported: float = 0
     daily_exported: float = 0
     evse_current: Optional[float] = None

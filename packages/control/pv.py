@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 import logging
 from typing import List
 
-from dataclass_utils.factories import currents_list_factory
+from dataclass_utils.factories import empty_three_phase_list_factory
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def config_factory() -> Config:
 
 @dataclass
 class Get:
-    currents: List[float] = field(default_factory=currents_list_factory)
+    currents: List[float] = field(default_factory=empty_three_phase_list_factory)
     daily_exported: float = 0
     monthly_exported: float = 0
     yearly_exported: float = 0

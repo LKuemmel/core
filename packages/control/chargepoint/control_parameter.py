@@ -4,7 +4,7 @@ from typing import List, Optional
 from control.chargepoint.chargepoint_state import ChargepointState
 from control.chargemode import Chargemode as Chargemode_enum
 from control.limiting_value import LimitingValue
-from dataclass_utils.factories import currents_list_factory
+from dataclass_utils.factories import empty_three_phase_list_factory
 
 
 @dataclass
@@ -37,7 +37,7 @@ class ControlParameter:
         default=0,
         metadata={"topic": "control_parameter/required_current", "mutable_by_algorithm": True})
     required_currents: List[float] = field(
-        default_factory=currents_list_factory)
+        default_factory=empty_three_phase_list_factory)
     state: ChargepointState = field(
         default=ChargepointState.NO_CHARGING_ALLOWED,
         metadata={"topic": "control_parameter/state", "mutable_by_algorithm": True})

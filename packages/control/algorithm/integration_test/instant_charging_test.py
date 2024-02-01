@@ -9,7 +9,7 @@ from control.chargemode import Chargemode
 from control import data
 from control.algorithm.algorithm import Algorithm
 from control.limiting_value import LimitingValue
-from dataclass_utils.factories import currents_list_factory
+from dataclass_utils.factories import empty_three_phase_list_factory
 
 
 @pytest.fixture()
@@ -43,8 +43,8 @@ def all_cp_instant_charging_3p():
 @dataclass
 class ParamsExpectedCounterSet:
     expected_raw_power_left: float = 0
-    expected_raw_currents_left_counter0: List[float] = field(default_factory=currents_list_factory)
-    expected_raw_currents_left_counter6: List[float] = field(default_factory=currents_list_factory)
+    expected_raw_currents_left_counter0: List[float] = field(default_factory=empty_three_phase_list_factory)
+    expected_raw_currents_left_counter6: List[float] = field(default_factory=empty_three_phase_list_factory)
 
 
 def assert_counter_set(params: ParamsExpectedCounterSet):
@@ -78,8 +78,8 @@ def test_start_instant_charging(all_cp_instant_charging_1p, all_cp_not_charging,
 class ParamsLimit(ParamsExpectedSetCurrent, ParamsExpectedCounterSet):
     name: str = ""
     raw_power_left: float = 0
-    raw_currents_left_counter0: List[float] = field(default_factory=currents_list_factory)
-    raw_currents_left_counter6: List[float] = field(default_factory=currents_list_factory)
+    raw_currents_left_counter0: List[float] = field(default_factory=empty_three_phase_list_factory)
+    raw_currents_left_counter6: List[float] = field(default_factory=empty_three_phase_list_factory)
     expected_state_str: LimitingValue = LimitingValue.CURRENT
 
 

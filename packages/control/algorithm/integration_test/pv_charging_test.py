@@ -11,7 +11,7 @@ from control.algorithm.algorithm import Algorithm
 from control.algorithm.algorithm import data as algorithm_data
 from control.chargepoint.chargepoint_template import CpTemplate
 from control.chargepoint.chargepoint_state import ChargepointState
-from dataclass_utils.factories import currents_list_factory
+from dataclass_utils.factories import empty_three_phase_list_factory
 
 
 @pytest.fixture()
@@ -87,16 +87,16 @@ class ParamsSurplus(ParamsExpectedSetCurrent, ParamsExpectedCounterSet):
     name: str = ""
     power: float = 0
     raw_power_left: float = 0
-    raw_currents_left_counter0: List[float] = field(default_factory=currents_list_factory)
-    raw_currents_left_counter6: List[float] = field(default_factory=currents_list_factory)
+    raw_currents_left_counter0: List[float] = field(default_factory=empty_three_phase_list_factory)
+    raw_currents_left_counter6: List[float] = field(default_factory=empty_three_phase_list_factory)
 
 
 @dataclass
 class ParamsPhaseSwitch(ParamsExpectedSetCurrent, ParamsExpectedCounterSet):
     name: str = ""
     raw_power_left: float = 0
-    raw_currents_left_counter0: List[float] = field(default_factory=currents_list_factory)
-    raw_currents_left_counter6: List[float] = field(default_factory=currents_list_factory)
+    raw_currents_left_counter0: List[float] = field(default_factory=empty_three_phase_list_factory)
+    raw_currents_left_counter6: List[float] = field(default_factory=empty_three_phase_list_factory)
     expected_timestamp_auto_phase_switch_cp3: Optional[str] = None
     expected_timestamp_auto_phase_switch_cp4: Optional[str] = None
     expected_timestamp_auto_phase_switch_cp5: Optional[str] = None

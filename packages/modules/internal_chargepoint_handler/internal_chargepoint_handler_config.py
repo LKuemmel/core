@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from dataclass_utils.factories import currents_list_factory, voltages_list_factory
+from dataclass_utils.factories import empty_three_phase_list_factory, voltages_list_factory
 from helpermodules.constants import NO_ERROR
 
 
@@ -29,7 +29,7 @@ def internal_chargepoint_data_factory() -> InternalChargepointData:
 @dataclass
 class Get:
     charge_state: bool = False
-    currents: List[float] = field(default_factory=currents_list_factory)
+    currents: List[float] = field(default_factory=empty_three_phase_list_factory)
     evse_current: float = 0
     exported: float = 0
     fault_str: str = NO_ERROR

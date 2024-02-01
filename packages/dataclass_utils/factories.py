@@ -9,7 +9,7 @@ def empty_list_factory() -> List:
     return []
 
 
-def currents_list_factory() -> List[float]:
+def empty_three_phase_list_factory() -> List[float]:
     return [0.0]*3
 
 

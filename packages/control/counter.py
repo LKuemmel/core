@@ -10,7 +10,7 @@ from control import data
 from control.ev import Ev
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
-from dataclass_utils.factories import currents_list_factory, voltages_list_factory
+from dataclass_utils.factories import empty_three_phase_list_factory, voltages_list_factory
 from helpermodules import timecheck
 from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
 from helpermodules.pub import Pub
@@ -32,7 +32,7 @@ class ControlRangeState(Enum):
 
 @dataclass
 class Config:
-    max_currents: List[float] = field(default_factory=currents_list_factory)
+    max_currents: List[float] = field(default_factory=empty_three_phase_list_factory)
     max_total_power: float = 0
 
 
@@ -42,10 +42,10 @@ def config_factory() -> Config:
 
 @dataclass
 class Get:
-    powers: List[float] = field(default_factory=currents_list_factory)
-    currents: List[float] = field(default_factory=currents_list_factory)
+    powers: List[float] = field(default_factory=empty_three_phase_list_factory)
+    currents: List[float] = field(default_factory=empty_three_phase_list_factory)
     voltages: List[float] = field(default_factory=voltages_list_factory)
-    power_factors: List[float] = field(default_factory=currents_list_factory)
+    power_factors: List[float] = field(default_factory=empty_three_phase_list_factory)
     unbalanced_load: float = 0
     frequency: float = 0
     daily_exported: float = 0
@@ -67,7 +67,7 @@ class Set:
     reserved_surplus: float = 0
     released_surplus: float = 0
     raw_power_left: float = 0
-    raw_currents_left: List[float] = field(default_factory=currents_list_factory)
+    raw_currents_left: List[float] = field(default_factory=empty_three_phase_list_factory)
     surplus_power_left: float = 0
     state_str: str = ""
 
