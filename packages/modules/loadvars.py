@@ -21,9 +21,12 @@ class Loadvars:
         topic = "openWB/set/system/device/module_update_completed"
         try:
             not_finished_threads = self._set_values()
+            log.debug(f"not_finished_threads {not_finished_threads}")
             levels = data.data.counter_all_data.get_list_of_elements_per_level()
             levels.reverse()
+            log.debug(f"levels {levels}")
             for level in levels:
+                log.debug(f"level {level}")
                 self._update_values_of_level(level, not_finished_threads)
                 wait_for_module_update_completed(self.event_module_update_completed, topic)
                 data.data.copy_module_data()
@@ -69,6 +72,7 @@ class Loadvars:
                             name=f"update values cp{chargepoint.chargepoint_module.config.id}"))
                 else:
                     component = get_component_obj_by_id(element["id"], not_finished_threads)
+                    log.debug(f"element {element} to component {component}")
                     if component is None:
                         continue
                     modules_threads.append(threading.Thread(target=update_values, args=(
