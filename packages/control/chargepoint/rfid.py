@@ -28,7 +28,6 @@ class ChargepointRfidMixin:
                 # keine Duo
                 cp2_data is None):
             self.data.set.rfid = rfid
-            Pub().pub("openWB/chargepoint/"+str(self.num)+"/set/rfid", rfid)
             self.chargepoint_module.clear_rfid()
 
         self.data.get.rfid = None

@@ -6,10 +6,8 @@ import pathlib
 from typing import Any, Dict, List, Optional
 
 from control import data
-from dataclass_utils import asdict
 from helpermodules.measurement_logging.process_log import CalculationType, analyse_percentage, process_entry
 from helpermodules.measurement_logging.write_log import LegacySmartHomeLogData, LogType, create_entry
-from helpermodules.pub import Pub
 from helpermodules import timecheck
 
 # alte Daten: Startzeitpunkt der Ladung, Endzeitpunkt, Geladene Reichweite, Energie, Leistung, Ladedauer, LP-Nummer,
@@ -62,7 +60,6 @@ def collect_data(chargepoint):
                 log_data.range_charged = get_value_or_default(lambda: log_data.imported_since_mode_switch /
                                                               charging_ev.ev_template.data.average_consump * 100)
                 log_data.time_charged = timecheck.get_difference_to_now(log_data.timestamp_start_charging)[0]
-            Pub().pub(f"openWB/set/chargepoint/{chargepoint.num}/set/log", asdict(log_data))
     except Exception:
         log.exception("Fehler im Ladelog-Modul")
 
@@ -371,7 +368,6 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
                           (data.data.optional_data.et_module is not None))
             cp.data.set.log.costs += costs
             log.debug(f"current costs {costs}, total costs {cp.data.set.log.costs}")
-            Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
 

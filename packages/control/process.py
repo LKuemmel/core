@@ -42,12 +42,8 @@ class Process:
                                 ["ev" + str(cp.data.set.charging_ev_prev)],
                                 immediately=False)
                         cp.data.set.current = 0
-                        Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/set/current", 0)
                         control_parameter.state = ChargepointState.NO_CHARGING_ALLOWED
-                    if cp.data.get.state_str is not None:
-                        Pub().pub("openWB/set/chargepoint/"+str(cp.num)+"/get/state_str",
-                                  cp.data.get.state_str)
-                    else:
+                    if cp.data.get.state_str is None:
                         Pub().pub(
                             f"openWB/set/chargepoint/{cp.num}/get/state_str",
                             "Ladevorgang wurde gestartet... (bei Problemen: Prüfe bitte zuerst in den Einstellungen"
@@ -107,7 +103,6 @@ class Process:
             current = 0
 
         chargepoint.data.set.current = current
-        Pub().pub("openWB/set/chargepoint/"+str(chargepoint.num)+"/set/current", current)
         log.info(f"LP{chargepoint.num}: set current {current} A, "
                  f"state {ChargepointState(chargepoint.data.control_parameter.state).name}")
 

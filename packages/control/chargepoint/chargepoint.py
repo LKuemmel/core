@@ -15,7 +15,6 @@ Tag-Liste: Tags, mit denen der Ladepunkt freigeschaltet werden kann. Ist diese l
 freigeschaltet werden.
 """
 from dataclasses import asdict
-import dataclasses
 import logging
 import threading
 import traceback
@@ -168,7 +167,7 @@ class Chargepoint(ChargepointRfidMixin):
                 (self.template.data.rfid_enabling and
                     (self.data.get.rfid is not None or self.data.set.rfid is not None))):
             if self.data.set.manual_lock:
-                Pub().pub(f"openWB/set/chargepoint/{self.num}/set/manual_lock", False)
+                self.data.set.manual_lock = False
             charging_possible = True
             message = None
         else:
@@ -230,21 +229,11 @@ class Chargepoint(ChargepointRfidMixin):
                 # Ev wurde noch nicht aktualisiert.
                 chargelog.save_and_reset_data(self, data.data.ev_data["ev"+str(self.data.set.charging_ev_prev)])
                 self.data.set.charging_ev_prev = -1
-                Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev",
-                          self.data.set.charging_ev_prev)
                 self.data.set.rfid = None
-                Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/rfid", None)
                 self.data.set.plug_time = None
-                Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_time", None)
                 self.data.set.phases_to_use = self.data.get.phases_in_use
-                Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/phases_to_use",
-                          self.data.set.phases_to_use)
         self.data.set.charging_ev = -1
-        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev", -1)
         self.data.set.current = 0
-        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/current", 0)
-        self.data.set.energy_to_charge = 0
-        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/energy_to_charge", 0)
 
     def setup_values_at_start(self):
         self._reset_values_at_start()
@@ -285,12 +274,9 @@ class Chargepoint(ChargepointRfidMixin):
     def _set_values_at_start(self):
         if self.data.get.plug_state and self.data.set.plug_time is None:
             self.data.set.plug_time = timecheck.create_timestamp()
-            Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_time",
-                      self.data.set.plug_time)
 
     def remember_previous_values(self):
         self.data.set.plug_state_prev = self.data.get.plug_state
-        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/plug_state_prev", self.data.set.plug_state_prev)
 
     def reset_log_data_chargemode_switch(self) -> None:
         reset_log = Log()
@@ -299,11 +285,9 @@ class Chargepoint(ChargepointRfidMixin):
         reset_log.imported_at_plugtime = self.data.set.log.imported_at_plugtime
         reset_log.imported_since_plugged = self.data.set.log.imported_since_plugged
         self.data.set.log = reset_log
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/log", asdict(self.data.set.log))
 
     def reset_log_data(self) -> None:
         self.data.set.log = Log()
-        Pub().pub(f"openWB/set/chargepoint/{self.num}/set/log", asdict(self.data.set.log))
 
     def reset_control_parameter_at_charge_stop(self) -> None:
         # Wenn die Ladung zB wegen Autolock gestoppt wird, Zählerstände beibehalten, damit nicht nochmal die Ladung
@@ -455,8 +439,6 @@ class Chargepoint(ChargepointRfidMixin):
                     self.data.set.log.imported_since_plugged == 0):
                 # Einmal muss die Anzahl der Phasen gesetzt werden.
                 if self.data.set.phases_to_use == 0:
-                    Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/phases_to_use",
-                              self.data.control_parameter.phases)
                     self.data.set.phases_to_use = self.data.control_parameter.phases
                 if self._is_phase_switch_required():
                     # Wenn die Umschaltverzögerung aktiv ist, darf nicht umgeschaltet werden.
@@ -485,8 +467,6 @@ class Chargepoint(ChargepointRfidMixin):
                             self.data.control_parameter.timestamp_perform_phase_switch = create_timestamp()
                             self.set_state_and_log(message)
                             if self.data.set.phases_to_use != self.data.control_parameter.phases:
-                                Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/phases_to_use",
-                                          self.data.control_parameter.phases)
                                 self.data.set.phases_to_use = self.data.control_parameter.phases
                             self.data.control_parameter.state = ChargepointState.PERFORMING_PHASE_SWITCH
                         else:
@@ -657,11 +637,7 @@ class Chargepoint(ChargepointRfidMixin):
                         if self.data.set.charging_ev != -1:
                             # Altes EV merken
                             self.data.set.charging_ev_prev = self.data.set.charging_ev
-                            Pub().pub("openWB/set/chargepoint/"+str(self.num) +
-                                      "/set/charging_ev_prev", self.data.set.charging_ev_prev)
                         self.data.set.charging_ev = -1
-                        Pub().pub("openWB/set/chargepoint/" +
-                                  str(self.num)+"/set/charging_ev", -1)
                         log.debug(f'LP {self.num}, EV: {self.data.set.charging_ev_data.data.name}'
                                   f' (EV-Nr.{vehicle}): Lademodus '
                                   f'{charging_ev.charge_template.data.chargemode.selected}, Submodus: '
@@ -716,9 +692,7 @@ class Chargepoint(ChargepointRfidMixin):
             log.debug("SoC nach EV-Wechsel")
         self.data.set.charging_ev_data = charging_ev
         self.data.set.charging_ev = vehicle
-        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev", vehicle)
         self.data.set.charging_ev_prev = vehicle
-        Pub().pub("openWB/set/chargepoint/"+str(self.num)+"/set/charging_ev_prev", vehicle)
         return charging_ev
 
     def _pub_connected_vehicle(self, vehicle: Ev):
@@ -758,15 +732,9 @@ class Chargepoint(ChargepointRfidMixin):
                 average_consumption=vehicle.ev_template.data.average_consump,
                 time_charging_in_use=True if (self.data.control_parameter.submode ==
                                               "time_charging") else False)
-            if soc_obj != self.data.get.connected_vehicle.soc:
-                Pub().pub("openWB/chargepoint/"+str(self.num) +
-                          "/get/connected_vehicle/soc", dataclasses.asdict(soc_obj))
-            if info_obj != self.data.get.connected_vehicle.info:
-                Pub().pub("openWB/chargepoint/"+str(self.num) +
-                          "/get/connected_vehicle/info", dataclasses.asdict(info_obj))
-            if config_obj != self.data.get.connected_vehicle.config:
-                Pub().pub("openWB/chargepoint/"+str(self.num) +
-                          "/get/connected_vehicle/config", dataclasses.asdict(config_obj))
+            self.data.get.connected_vehicle.soc = soc_obj
+            self.data.get.connected_vehicle.info = info_obj
+            self.data.get.connected_vehicle.config = config_obj
         except Exception:
             log.exception("Fehler im Prepare-Modul")
 

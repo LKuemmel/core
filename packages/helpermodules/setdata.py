@@ -521,8 +521,7 @@ class SetData:
                     self._validate_value(msg, int, [(-1, float("inf"))])
                 elif "/set/current" in msg.topic:
                     self._validate_value(msg, float, [(6, 32), (0, 0)])
-                elif ("/set/energy_to_charge" in msg.topic or
-                        "/set/required_power" in msg.topic):
+                elif "/set/required_power" in msg.topic:
                     self._validate_value(msg, float, [(0, float("inf"))])
                 elif "/set/phases_to_use" in msg.topic:
                     self._validate_value(msg, int, [(0, 3)])

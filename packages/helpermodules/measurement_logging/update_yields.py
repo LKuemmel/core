@@ -4,13 +4,10 @@ from pathlib import Path
 from typing import Dict, List
 
 from control import data
-from control.bat_all import BatAll
-from control.counter_all import CounterAll
 from helpermodules import timecheck
 from helpermodules.measurement_logging.process_log import get_totals
 from helpermodules.pub import Pub
 from control.bat import Bat
-from control.chargepoint.chargepoint import Chargepoint
 from control.counter import Counter
 from control.ev import Ev
 from control.pv import Pv
@@ -39,13 +36,9 @@ def update_module_yields(module: str, totals: Dict) -> None:
                 topic = "chargepoint"
             else:
                 topic = module
-            if isinstance(module_data, (Ev, Chargepoint, Pv, Bat, Counter)):
+            if isinstance(module_data, (Ev, Pv, Bat, Counter)):
                 Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_imported", daily_imported)
                 Pub().pub(f"openWB/set/{topic}/{module_data.num}/get/daily_exported", daily_exported)
-            elif not isinstance(module_data, (BatAll, CounterAll)):
-                # wird im changed_values_handler an den Broker gesendet
-                Pub().pub(f"openWB/set/{topic}/get/daily_imported", daily_imported)
-                Pub().pub(f"openWB/set/{topic}/get/daily_exported", daily_exported)
     except Exception:
         log.exception(f"Fehler beim Veröffentlichen der Tageserträge für {module}")
 
