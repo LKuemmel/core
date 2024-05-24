@@ -12,8 +12,8 @@ from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState
 from dataclass_utils.factories import currents_list_factory, voltages_list_factory
 from helpermodules import timecheck
+from helpermodules.constants import NO_ERROR
 from helpermodules.phase_mapping import convert_cp_currents_to_evu_currents
-from helpermodules.pub import Pub
 from modules.common.fault_state import FaultStateLevel
 
 log = logging.getLogger(__name__)
@@ -32,8 +32,9 @@ class ControlRangeState(Enum):
 
 @dataclass
 class Config:
-    max_currents: List[float] = field(default_factory=currents_list_factory)
-    max_total_power: float = 0
+    max_currents: List[float] = field(default_factory=currents_list_factory, metadata={
+                                      "topic": "get/max_currents", "mutable_by_algorithm": False})
+    max_total_power: float = field(default=0, metadata={"topic": "get/max_total_power", "mutable_by_algorithm": False})
 
 
 def config_factory() -> Config:
@@ -42,19 +43,22 @@ def config_factory() -> Config:
 
 @dataclass
 class Get:
-    powers: List[float] = field(default_factory=currents_list_factory)
-    currents: List[float] = field(default_factory=currents_list_factory)
-    voltages: List[float] = field(default_factory=voltages_list_factory)
-    power_factors: List[float] = field(default_factory=currents_list_factory)
-    unbalanced_load: float = 0
-    frequency: float = 0
-    daily_exported: float = 0
-    daily_imported: float = 0
-    imported: float = 0
-    exported: float = 0
-    fault_state: int = 0
-    fault_str: str = ""
-    power: float = 0
+    powers: List[float] = field(default_factory=currents_list_factory, metadata={
+        "topic": "get/powers", "mutable_by_algorithm": False})
+    currents: List[float] = field(default_factory=currents_list_factory, metadata={
+                                  "topic": "get/currents", "mutable_by_algorithm": False})
+    voltages: List[float] = field(default_factory=voltages_list_factory, metadata={
+                                  "topic": "get/voltages", "mutable_by_algorithm": False})
+    power_factors: List[float] = field(default_factory=currents_list_factory, metadata={
+        "topic": "get/power_factors", "mutable_by_algorithm": False})
+    frequency: float = field(default=0, metadata={"topic": "get/frequency", "mutable_by_algorithm": False})
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported", "mutable_by_algorithm": True})
+    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported", "mutable_by_algorithm": True})
+    imported: float = field(default=0, metadata={"topic": "get/imported", "mutable_by_algorithm": False})
+    exported: float = field(default=0, metadata={"topic": "get/exported", "mutable_by_algorithm": False})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state", "mutable_by_algorithm": True})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str", "mutable_by_algorithm": True})
+    power: float = field(default=0, metadata={"topic": "get/power", "mutable_by_algorithm": False})
 
 
 def get_factory() -> Get:
@@ -63,13 +67,12 @@ def get_factory() -> Get:
 
 @dataclass
 class Set:
-    error_counter: int = 0
-    reserved_surplus: float = 0
-    released_surplus: float = 0
+    error_counter: int = field(default=0, metadata={"topic": "set/error_counter", "mutable_by_algorithm": True})
+    reserved_surplus: float = field(default=0, metadata={"topic": "set/reserved_surplus", "mutable_by_algorithm": True})
+    released_surplus: float = field(default=0, metadata={"topic": "set/released_surplus", "mutable_by_algorithm": True})
     raw_power_left: float = 0
     raw_currents_left: List[float] = field(default_factory=currents_list_factory)
     surplus_power_left: float = 0
-    state_str: str = ""
 
 
 def set_factory() -> Set:
@@ -121,7 +124,6 @@ class Counter:
             # auf True gesetzt werden.
             if loadmanagement_available is False:
                 data.data.cp_data[cp].data.set.loadmanagement_available = loadmanagement_available
-        Pub().pub(f"openWB/set/counter/{self.num}/set/error_counter", self.data.set.error_counter)
 
     # tested
 
@@ -182,18 +184,6 @@ class Counter:
             self.data.set.surplus_power_left -= sum(diffs) * 230
         log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                   f'{self.data.set.surplus_power_left}W verbleibender Überschuss')
-
-    def put_stats(self):
-        try:
-            if f'counter{self.num}' == data.data.counter_all_data.get_evu_counter_str():
-                Pub().pub(f"openWB/set/counter/{self.num}/set/reserved_surplus",
-                          self.data.set.reserved_surplus)
-                Pub().pub(f"openWB/set/counter/{self.num}/set/released_surplus",
-                          self.data.set.released_surplus)
-                log.info(f'{self.data.set.reserved_surplus}W reservierte EVU-Leistung, '
-                         f'{self.data.set.released_surplus}W freigegebene EVU-Leistung')
-        except Exception:
-            log.exception("Fehler in der Zähler-Klasse von "+str(self.num))
 
     def calc_surplus(self):
         # reservierte Leistung wird nicht berücksichtigt, weil diese noch verwendet werden kann, bis die EV
@@ -480,8 +470,6 @@ class Counter:
         """ setzt die Daten zurück, die über mehrere Regelzyklen genutzt werden.
         """
         try:
-            Pub().pub(f"openWB/set/counter/{self.num}/set/reserved_surplus", 0)
-            Pub().pub(f"openWB/set/counter/{self.num}/set/released_surplus", 0)
             self.data.set.reserved_surplus = 0
             self.data.set.released_surplus = 0
         except Exception:

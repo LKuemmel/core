@@ -10,7 +10,6 @@ from control import data
 from control.counter import Counter
 from dataclass_utils.factories import empty_list_factory
 from helpermodules.messaging import MessageType, pub_system_message
-from helpermodules.pub import Pub
 from modules.common.component_type import ComponentType, component_type_to_readable_text
 from modules.common.fault_state import FaultStateLevel
 from modules.common.simcount import SimCounter
@@ -20,7 +19,8 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Config:
-    reserve_for_not_charging: bool = False
+    reserve_for_not_charging: bool = field(
+        default=False, metadata={"topic": "config/reserve_for_not_charging", "mutable_by_algorithm": False})
 
 
 def config_factory() -> Config:
@@ -29,18 +29,26 @@ def config_factory() -> Config:
 
 @dataclass
 class Set:
-    loadmanagement_active: bool = False
-    home_consumption: float = 0
-    smarthome_power_excluded_from_home_consumption: float = 0
-    invalid_home_consumption: int = 0
-    daily_yield_home_consumption: float = 0
-    imported_home_consumption: float = 0
-    disengageable_smarthome_power: float = 0
+    loadmanagement_active: bool = field(
+        default=False, metadata={"topic": "set/loadmanagement_active", "mutable_by_algorithm": True})
+    home_consumption: float = field(default=0, metadata={"topic": "set/home_consumption", "mutable_by_algorithm": True})
+    smarthome_power_excluded_from_home_consumption: float = field(
+        default=0,
+        metadata={"topic": "set/smarthome_power_excluded_from_home_consumption", "mutable_by_algorithm": True})
+    invalid_home_consumption: int = field(
+        default=0, metadata={"topic": "set/invalid_home_consumption", "mutable_by_algorithm": True})
+    daily_yield_home_consumption: float = field(
+        default=0, metadata={"topic": "set/daily_yield_home_consumption", "mutable_by_algorithm": True})
+    imported_home_consumption: float = field(
+        default=0, metadata={"topic": "set/imported_home_consumption", "mutable_by_algorithm": True})
+    disengageable_smarthome_power: float = field(
+        default=0, metadata={"topic": "set/disengageable_smarthome_power", "mutable_by_algorithm": True})
 
 
 @dataclass
 class Get:
-    hierarchy: List = field(default_factory=empty_list_factory)
+    hierarchy: List = field(default_factory=empty_list_factory, metadata={
+                            "topic": "get/hierarchy", "mutable_by_algorithm": True})
 
 
 def get_factory() -> Get:
@@ -89,12 +97,6 @@ class CounterAll:
                 "möglich.")
             raise
 
-    def put_stats(self) -> None:
-        try:
-            Pub().pub("openWB/set/counter/set/loadmanagement_active", self.data.set.loadmanagement_active)
-        except Exception:
-            log.exception("Fehler in der allgemeinen Zähler-Klasse")
-
     def set_home_consumption(self) -> None:
         try:
             home_consumption, elements = self._calc_home_consumption()
@@ -107,26 +109,15 @@ class CounterAll:
                     evu_counter_data.get.fault_str = ("Der Wert für den Hausverbrauch ist nicht plausibel (negativ). "
                                                       "Bitte die Leistungen der Komponenten und die Anordnung in der "
                                                       "Hierarchie prüfen.")
-                    evu_counter = self.get_id_evu_counter()
-                    Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_state",
-                              evu_counter_data.get.fault_state)
-                    Pub().pub(f"openWB/set/counter/{evu_counter}/get/fault_str",
-                              evu_counter_data.get.fault_str)
                 if self.data.set.invalid_home_consumption < 3:
                     self.data.set.invalid_home_consumption += 1
-                    Pub().pub("openWB/set/counter/set/invalid_home_consumption",
-                              self.data.set.invalid_home_consumption)
                     return
                 else:
                     home_consumption = 0
             else:
                 self.data.set.invalid_home_consumption = 0
-                Pub().pub("openWB/set/counter/set/invalid_home_consumption",
-                          self.data.set.invalid_home_consumption)
             self.data.set.home_consumption = home_consumption
-            Pub().pub("openWB/set/counter/set/home_consumption", self.data.set.home_consumption)
             imported, _ = self.sim_counter.sim_count(self.data.set.home_consumption)
-            Pub().pub("openWB/set/counter/set/imported_home_consumption", imported)
             self.data.set.imported_home_consumption = imported
         except Exception:
             log.exception("Fehler in der allgemeinen Zähler-Klasse")
@@ -290,7 +281,6 @@ class CounterAll:
         """
         if self.__is_id_in_top_level(id_to_find):
             self.data.get.hierarchy.append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
         else:
             if (self.__edit_element_in_hierarchy(
                     self.data.get.hierarchy[0],
@@ -301,7 +291,6 @@ class CounterAll:
             self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType) -> bool:
         if id_to_find == child["id"]:
             current_entry["children"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
             return True
         else:
             return False
@@ -315,7 +304,6 @@ class CounterAll:
             if keep_children:
                 self.data.get.hierarchy.extend(item["children"])
             self.data.get.hierarchy.remove(item)
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
         else:
             if (self.__edit_element_in_hierarchy(
                     self.data.get.hierarchy[0],
@@ -327,7 +315,6 @@ class CounterAll:
             if keep_children:
                 current_entry["children"].extend(child["children"])
             current_entry["children"].remove(child)
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
             return True
         else:
             return False
@@ -338,7 +325,6 @@ class CounterAll:
         item = self.__is_id_in_top_level(id_to_find)
         if item:
             item["children"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
         else:
             if (self.__edit_element_in_hierarchy(
                     self.data.get.hierarchy[0],
@@ -349,7 +335,6 @@ class CounterAll:
             self, child: Dict, current_entry: Dict, id_to_find: int, new_id: int, new_type: ComponentType) -> bool:
         if id_to_find == child["id"]:
             child["children"].append({"id": new_id, "type": new_type.value, "children": []})
-            Pub().pub("openWB/set/counter/get/hierarchy", self.data.get.hierarchy)
             return True
         else:
             return False
@@ -427,7 +412,6 @@ class CounterAll:
                             "type": ComponentType.COUNTER.value,
                             "children": data.data.counter_all_data.data.get.hierarchy
                         }]
-                        Pub().pub("openWB/set/counter/get/hierarchy", hierarchy)
                         data.data.counter_all_data.data.get.hierarchy = hierarchy
 
                     pub_system_message({}, f"{component_type_to_readable_text(type_name)} mit ID {element['id']} wurde"
