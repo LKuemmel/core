@@ -33,8 +33,8 @@ class ControlRangeState(Enum):
 @dataclass
 class Config:
     max_currents: List[float] = field(default_factory=currents_list_factory, metadata={
-                                      "topic": "get/max_currents", "mutable_by_algorithm": False})
-    max_total_power: float = field(default=0, metadata={"topic": "get/max_total_power", "mutable_by_algorithm": False})
+                                      "topic": "get/max_currents", "subscribe_only": True})
+    max_total_power: float = field(default=0, metadata={"topic": "get/max_total_power", "subscribe_only": True})
 
 
 def config_factory() -> Config:
@@ -44,21 +44,21 @@ def config_factory() -> Config:
 @dataclass
 class Get:
     powers: List[float] = field(default_factory=currents_list_factory, metadata={
-        "topic": "get/powers", "mutable_by_algorithm": False})
+        "topic": "get/powers", "subscribe_only": True})
     currents: List[float] = field(default_factory=currents_list_factory, metadata={
-                                  "topic": "get/currents", "mutable_by_algorithm": False})
+                                  "topic": "get/currents", "subscribe_only": True})
     voltages: List[float] = field(default_factory=voltages_list_factory, metadata={
-                                  "topic": "get/voltages", "mutable_by_algorithm": False})
+                                  "topic": "get/voltages", "subscribe_only": True})
     power_factors: List[float] = field(default_factory=currents_list_factory, metadata={
-        "topic": "get/power_factors", "mutable_by_algorithm": False})
-    frequency: float = field(default=0, metadata={"topic": "get/frequency", "mutable_by_algorithm": False})
-    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported", "mutable_by_algorithm": True})
-    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported", "mutable_by_algorithm": True})
-    imported: float = field(default=0, metadata={"topic": "get/imported", "mutable_by_algorithm": False})
-    exported: float = field(default=0, metadata={"topic": "get/exported", "mutable_by_algorithm": False})
-    fault_state: int = field(default=0, metadata={"topic": "get/fault_state", "mutable_by_algorithm": True})
-    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str", "mutable_by_algorithm": True})
-    power: float = field(default=0, metadata={"topic": "get/power", "mutable_by_algorithm": False})
+        "topic": "get/power_factors", "subscribe_only": True})
+    frequency: float = field(default=0, metadata={"topic": "get/frequency", "subscribe_only": True})
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported", "subscribe_only": False})
+    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported", "subscribe_only": False})
+    imported: float = field(default=0, metadata={"topic": "get/imported", "subscribe_only": True})
+    exported: float = field(default=0, metadata={"topic": "get/exported", "subscribe_only": True})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state", "subscribe_only": False})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str", "subscribe_only": False})
+    power: float = field(default=0, metadata={"topic": "get/power", "subscribe_only": True})
 
 
 def get_factory() -> Get:
@@ -67,9 +67,9 @@ def get_factory() -> Get:
 
 @dataclass
 class Set:
-    error_counter: int = field(default=0, metadata={"topic": "set/error_counter", "mutable_by_algorithm": True})
-    reserved_surplus: float = field(default=0, metadata={"topic": "set/reserved_surplus", "mutable_by_algorithm": True})
-    released_surplus: float = field(default=0, metadata={"topic": "set/released_surplus", "mutable_by_algorithm": True})
+    error_counter: int = field(default=0, metadata={"topic": "set/error_counter", "subscribe_only": False})
+    reserved_surplus: float = field(default=0, metadata={"topic": "set/reserved_surplus", "subscribe_only": False})
+    released_surplus: float = field(default=0, metadata={"topic": "set/released_surplus", "subscribe_only": False})
     raw_power_left: float = 0
     raw_currents_left: List[float] = field(default_factory=currents_list_factory)
     surplus_power_left: float = 0

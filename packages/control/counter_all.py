@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 @dataclass
 class Config:
     reserve_for_not_charging: bool = field(
-        default=False, metadata={"topic": "config/reserve_for_not_charging", "mutable_by_algorithm": False})
+        default=False, metadata={"topic": "config/reserve_for_not_charging", "subscribe_only": True})
 
 
 def config_factory() -> Config:
@@ -30,25 +30,25 @@ def config_factory() -> Config:
 @dataclass
 class Set:
     loadmanagement_active: bool = field(
-        default=False, metadata={"topic": "set/loadmanagement_active", "mutable_by_algorithm": True})
-    home_consumption: float = field(default=0, metadata={"topic": "set/home_consumption", "mutable_by_algorithm": True})
+        default=False, metadata={"topic": "set/loadmanagement_active", "subscribe_only": False})
+    home_consumption: float = field(default=0, metadata={"topic": "set/home_consumption", "subscribe_only": False})
     smarthome_power_excluded_from_home_consumption: float = field(
         default=0,
-        metadata={"topic": "set/smarthome_power_excluded_from_home_consumption", "mutable_by_algorithm": True})
+        metadata={"topic": "set/smarthome_power_excluded_from_home_consumption", "subscribe_only": False})
     invalid_home_consumption: int = field(
-        default=0, metadata={"topic": "set/invalid_home_consumption", "mutable_by_algorithm": True})
+        default=0, metadata={"topic": "set/invalid_home_consumption", "subscribe_only": False})
     daily_yield_home_consumption: float = field(
-        default=0, metadata={"topic": "set/daily_yield_home_consumption", "mutable_by_algorithm": True})
+        default=0, metadata={"topic": "set/daily_yield_home_consumption", "subscribe_only": False})
     imported_home_consumption: float = field(
-        default=0, metadata={"topic": "set/imported_home_consumption", "mutable_by_algorithm": True})
+        default=0, metadata={"topic": "set/imported_home_consumption", "subscribe_only": False})
     disengageable_smarthome_power: float = field(
-        default=0, metadata={"topic": "set/disengageable_smarthome_power", "mutable_by_algorithm": True})
+        default=0, metadata={"topic": "set/disengageable_smarthome_power", "subscribe_only": False})
 
 
 @dataclass
 class Get:
     hierarchy: List = field(default_factory=empty_list_factory, metadata={
-                            "topic": "get/hierarchy", "mutable_by_algorithm": True})
+                            "topic": "get/hierarchy", "subscribe_only": False})
 
 
 def get_factory() -> Get:

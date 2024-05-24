@@ -4,19 +4,18 @@ Davon ab geht z.B. noch der Hausverbrauch. Für das Laden mit PV kann deshalb nu
 der sonst in das Netz eingespeist werden würde.
 """
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 import logging
 
 from control import data
 from helpermodules.constants import NO_ERROR
-from helpermodules.pub import Pub
 
 log = logging.getLogger(__name__)
 
 
 @dataclass
 class Config:
-    configured: bool = False
+    configured: bool = field(default=False, metadata={"topic": "config/configured", "subscribe_only": False})
 
 
 def config_factory() -> Config:
@@ -25,13 +24,14 @@ def config_factory() -> Config:
 
 @dataclass
 class Get:
-    daily_exported: float = 0
-    fault_str: str = NO_ERROR
-    fault_state: int = 0
-    monthly_exported: float = 0
-    yearly_exported: float = 0
-    exported: float = 0
-    power: float = 0
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported", "subscribe_only": False})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str", "subscribe_only": False})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state", "subscribe_only": False})
+    monthly_exported: float = field(
+        default=0, metadata={"topic": "get/monthly_exported", "subscribe_only": True})
+    yearly_exported: float = field(default=0, metadata={"topic": "get/yearly_exported", "subscribe_only": True})
+    exported: float = field(default=0, metadata={"topic": "get/exported", "subscribe_only": False})
+    power: float = field(default=0, metadata={"topic": "get/power", "subscribe_only": False})
 
 
 def get_factory() -> Get:
@@ -72,7 +72,6 @@ class PvAll:
                         log.exception("Fehler im allgemeinen PV-Modul für "+str(module))
                 if fault_state == 0:
                     self.data.get.exported = exported
-                    Pub().pub("openWB/set/pv/get/exported", self.data.get.exported)
                     self.data.get.fault_state = 0
                     self.data.get.fault_str = NO_ERROR
                 else:
@@ -81,14 +80,9 @@ class PvAll:
                                                "aktueller Zählerstand ermittelt werden, da nicht alle Module Werte "
                                                "liefern.")
                 self.data.get.power = power
-                Pub().pub("openWB/set/pv/get/power", self.data.get.power)
-                Pub().pub("openWB/set/pv/get/fault_state", self.data.get.fault_state)
-                Pub().pub("openWB/set/pv/get/fault_str", self.data.get.fault_str)
                 self.data.config.configured = True
-                Pub().pub("openWB/set/pv/config/configured", self.data.config.configured)
             else:
                 self.data.config.configured = False
-                Pub().pub("openWB/set/pv/config/configured", self.data.config.configured)
-                {Pub().pub("openWB/pv/get/"+k, 0) for (k, _) in asdict(self.data.get).items()}
+                self.data.get = Get()
         except Exception:
             log.exception("Fehler im allgemeinen PV-Modul")

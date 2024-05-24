@@ -45,8 +45,6 @@ def update_module_yields(module: str, totals: Dict) -> None:
         module_data.data.get.daily_exported = daily_exported
         if module in m:
             Pub().pub(f"openWB/set/pv/{module_data.num}/get/daily_exported", daily_exported)
-        else:
-            Pub().pub("openWB/set/pv/get/daily_exported", daily_exported)
 
     for m in totals[module]:
         if m in getattr(data.data, f"{module}_data") or m == "all":

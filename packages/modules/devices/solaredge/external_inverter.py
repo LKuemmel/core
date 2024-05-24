@@ -37,6 +37,7 @@ class SolaredgeExternalInverter:
         self.store.set(self.read_state())
 
     def read_state(self) -> InverterState:
+        log.debug(f"self.registers.powers {self.registers.powers}")
         power = self._read_scaled_int16(self.registers.powers, 4)[0]
         exported = self._read_scaled_uint32(self.registers.imp_exp, 8)[0]
         currents = self._read_scaled_int16(self.registers.currents, 3)

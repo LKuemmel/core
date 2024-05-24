@@ -8,7 +8,6 @@ from typing import Dict, List
 
 from dataclass_utils.factories import empty_dict_factory
 from helpermodules.constants import NO_ERROR
-from helpermodules.pub import Pub
 from helpermodules.timecheck import create_unix_timestamp_current_full_hour
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.display_themes.cards.config import CardsDisplayTheme
@@ -18,9 +17,10 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class EtGet:
-    fault_state: int = 0
-    fault_str: str = NO_ERROR
-    prices: Dict = field(default_factory=empty_dict_factory)
+    fault_state: int = field(default=0, metadata={"topic": "et/get/fault_state", "subscribe_only": False})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "et/get/fault_str", "subscribe_only": False})
+    prices: Dict = field(default_factory=empty_dict_factory, metadata={
+                         "topic": "et/get/prices", "subscribe_only": False})
 
 
 def get_factory() -> EtGet:
@@ -36,14 +36,20 @@ def et_factory() -> Et:
     return Et()
 
 
+def cards_display_theme_factory() -> CardsDisplayTheme:
+    return CardsDisplayTheme()
+
+
 @dataclass
 class InternalDisplay:
-    active: bool = False
-    on_if_plugged_in: bool = True
-    pin_active: bool = False
-    pin_code: str = "0000"
-    standby: int = 60
-    theme: CardsDisplayTheme = CardsDisplayTheme()
+    active: bool = field(default=False, metadata={"topic": "int_display/active", "subscribe_only": True})
+    on_if_plugged_in: bool = field(default=True, metadata={
+                                   "topic": "int_display/on_if_plugged_in", "subscribe_only": True})
+    pin_active: bool = field(default=False, metadata={"topic": "int_display/pin_active", "subscribe_only": True})
+    pin_code: str = field(default="0000", metadata={"topic": "int_display/pin_code", "subscribe_only": True})
+    standby: int = field(default=60, metadata={"topic": "int_display/standby", "subscribe_only": True})
+    theme: CardsDisplayTheme = field(default_factory=cards_display_theme_factory, metadata={
+                                     "topic": "int_display/theme", "subscribe_only": True})
 
 
 def int_display_factory() -> InternalDisplay:
@@ -61,7 +67,7 @@ def led_factory() -> Led:
 
 @dataclass
 class Rfid:
-    active: bool = False
+    active: bool = field(default=False, metadata={"topic": "rfid/active", "subscribe_only": True})
 
 
 def rfid_factory() -> Rfid:
@@ -76,11 +82,13 @@ class OptionalData:
     rfid: Rfid = field(default_factory=rfid_factory)
 
 
+@dataclass
 class Optional:
     def __init__(self):
         try:
             self.data = OptionalData()
-            self.et_module: ConfigurableElectricityTariff = None
+            self.et_module: ConfigurableElectricityTariff = field(
+                default=None, metadata={"topic": "optional/et/provider", "subscribe_only": True})
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
@@ -148,8 +156,7 @@ class Optional:
                 threading.Thread(target=self.et_module.update, args=(), name="electricity tariff").start()
             else:
                 # Wenn kein Modul konfiguriert ist, Fehlerstatus zurücksetzen.
-                if self.data.et.get.fault_state != 0 or self.data.et.get.fault_str != NO_ERROR:
-                    Pub().pub("openWB/set/optional/et/get/fault_state", 0)
-                    Pub().pub("openWB/set/optional/et/get/fault_str", NO_ERROR)
+                self.data.et.get.fault_state = 0
+                self.data.et.get.fault_str = NO_ERROR
         except Exception:
             log.exception("Fehler im Optional-Modul")

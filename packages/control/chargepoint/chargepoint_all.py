@@ -10,11 +10,11 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class AllGet:
-    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported", "mutable_by_algorithm": True})
-    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported", "mutable_by_algorithm": True})
-    power: float = field(default=0, metadata={"topic": "get/power", "mutable_by_algorithm": True})
-    imported: float = field(default=0, metadata={"topic": "get/imported", "mutable_by_algorithm": True})
-    exported: float = field(default=0, metadata={"topic": "get/exported", "mutable_by_algorithm": True})
+    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported", "subscribe_only": False})
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported", "subscribe_only": False})
+    power: float = field(default=0, metadata={"topic": "get/power", "subscribe_only": False})
+    imported: float = field(default=0, metadata={"topic": "get/imported", "subscribe_only": False})
+    exported: float = field(default=0, metadata={"topic": "get/exported", "subscribe_only": False})
 
 
 def all_get_factory() -> AllGet:

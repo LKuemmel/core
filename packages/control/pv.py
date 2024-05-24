@@ -9,6 +9,7 @@ import logging
 from typing import List
 
 from dataclass_utils.factories import currents_list_factory
+from helpermodules.constants import NO_ERROR
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ def get_inverter_default_config():
 
 @dataclass
 class Config:
-    max_ac_out: float = 0
+    max_ac_out: float = field(default=0, metadata={"topic": "config/max_ac_out", "subscribe_only": True})
 
 
 def config_factory() -> Config:
@@ -28,14 +29,16 @@ def config_factory() -> Config:
 
 @dataclass
 class Get:
-    currents: List[float] = field(default_factory=currents_list_factory)
-    daily_exported: float = 0
-    monthly_exported: float = 0
-    yearly_exported: float = 0
-    exported: float = 0
-    fault_state: int = 0
-    fault_str: str = ""
-    power: float = 0
+    currents: List[float] = field(default_factory=currents_list_factory, metadata={
+                                  "topic": "get/currents", "subscribe_only": True})
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported", "subscribe_only": True})
+    monthly_exported: float = field(
+        default=0, metadata={"topic": "get/monthly_exported", "subscribe_only": True})
+    yearly_exported: float = field(default=0, metadata={"topic": "get/yearly_exported", "subscribe_only": True})
+    exported: float = field(default=0, metadata={"topic": "get/exported", "subscribe_only": True})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state", "subscribe_only": False})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str", "subscribe_only": False})
+    power: float = field(default=0, metadata={"topic": "get/power", "subscribe_only": True})
 
 
 def get_factory() -> Get:

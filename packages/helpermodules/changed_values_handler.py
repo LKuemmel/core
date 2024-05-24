@@ -14,9 +14,9 @@ log = logging.getLogger(__name__)
 
 # In den Metadaten wird unter dem Key der Topic-Suffix ab "openWB/ev/2/" angegeben. Der Topic-Prefix ("openWB/ev/2/")
 # wird automatisch ermittelt.
-# Der Key mutable_by_algorithm ist True, wenn die Werte im Algorithmus geändert werden können. Nur diese Werte werden
-# automatisiert gepublished. Werte, die an anderer Stelle gepublished werden, wie zB Zählerstände, werden mit False
-# gekennzeichnet. Um eine Dokumentation der Topics zu erhalten, sollten die Metadaten dennoch ausgefüllt werden.
+# Der Key subscribe_only ist True, wenn die Werte im Algorithmus nicht geändert werden. Werte, die an anderer Stelle
+# gepublished werden, wie zB Zählerstände, werden mit True gekennzeichnet, damit sie nicht erneut gepublished werden.
+# Um eine Dokumentation der Topics zu erhalten, sollten die Metadaten dennoch ausgefüllt werden.
 # Metadaten werden nur für Felder erzeugt, die gepublished werden sollen, dh bei ganzen Klassen für das Feld der
 # jeweiligen Klasse. Wenn Werte aus einer instanziierten Klasse gepublished werden sollen, erhält die übergeordnete
 # Klasse keine Metadaten (siehe Beispiel unten).
@@ -34,8 +34,8 @@ log = logging.getLogger(__name__)
 
 # @dataclass
 # class SampleNested:
-#     parameter1: bool = field(default=False, metadata={"topic": "get/nested1", "mutable_by_algorithm": True})
-#     parameter2: int = field(default=0, metadata={"topic": "get/nested2", "mutable_by_algorithm": True})
+#     parameter1: bool = field(default=False, metadata={"topic": "get/nested1", "subscribe_only": False})
+#     parameter2: int = field(default=0, metadata={"topic": "get/nested2", "subscribe_only": False})
 
 
 # def sample_nested() -> SampleNested:
@@ -48,12 +48,12 @@ log = logging.getLogger(__name__)
 # diese Klasse eingetragen. Die Felder der Konfigurationsklasse bekommen keine Metadaten, da diese nicht einzeln
 # gepublished werden.
 #     sample_field_class: SampleClass = field(
-#         default_factory=sample_class, metadata={"topic": "get/field_class", "mutable_by_algorithm": True})
-#     sample_field_int: int = field(default=0, metadata={"topic": "get/field_int", "mutable_by_algorithm": True})
+#         default_factory=sample_class, metadata={"topic": "get/field_class", "subscribe_only": False})
+#     sample_field_int: int = field(default=0, metadata={"topic": "get/field_int", "subscribe_only": False})
 #     sample_field_immutable: float = field(
-#         default=0, metadata={"topic": "get/field_immutable", "mutable_by_algorithm": False})
+#         default=0, metadata={"topic": "get/field_immutable", "subscribe_only": True})
 #     sample_field_list: List = field(default_factory=currents_list_factory, metadata={
-#                                     "topic": "get/field_list", "mutable_by_algorithm": True})
+#                                     "topic": "get/field_list", "subscribe_only": False})
 #     # Bei verschachtelten Klassen, wo der zu publishende Wert auf einer tieferen Ebene liegt, werden nur für den zu
 # publishenden Wert Metadaten erzeugt.
 #     sample_field_nested: SampleNested = field(default_factory=sample_nested)
@@ -78,9 +78,15 @@ class ChangedValuesHandler:
     def pub_changed_values(self):
         try:
             # publishen der geänderten Werte
-            self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data.get, data.data.bat_all_data.data.get)
-            self._update_value("openWB/set/counter/", self.prev_data.counter_all_data.data.get,
-                               data.data.counter_all_data.data.get)
+            self._update_value("openWB/set/bat/", self.prev_data.bat_all_data.data, data.data.bat_all_data.data)
+            self._update_value("openWB/set/counter/", self.prev_data.counter_all_data.data,
+                               data.data.counter_all_data.data)
+            self._update_value("openWB/set/general/", self.prev_data.general_data.data,
+                               data.data.general_data.data)
+            self._update_value("openWB/set/pv/", self.prev_data.pv_all_data.data,
+                               data.data.pv_all_data.data)
+            self._update_value("openWB/set/optional/", self.prev_data.optional_data.data,
+                               data.data.optional_data.data)
             for key, value in data.data.cp_data.items():
                 try:
                     self._update_value(f"openWB/set/chargepoint/{value.num}/",
@@ -97,6 +103,12 @@ class ChangedValuesHandler:
                 try:
                     self._update_value(f"openWB/set/counter/{value.num}/",
                                        self.prev_data.counter_data[key].data, value.data)
+                except Exception as e:
+                    log.exception(e)
+            for key, value in data.data.pv_data.items():
+                try:
+                    self._update_value(f"openWB/set/pv/{value.num}/",
+                                       self.prev_data.pv_data[key].data, value.data)
                 except Exception as e:
                     log.exception(e)
             # chargepoint, ev template, autolock, time and scheduled charging plans mutable_by_algorithm immer false

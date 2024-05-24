@@ -58,11 +58,11 @@ def connected_soc_factory() -> ConnectedSoc:
 @dataclass
 class ConnectedVehicle:
     config: ConnectedConfig = field(default_factory=connected_config_factory, metadata={
-                                    "topic": "get/connected_vehicle/config", "mutable_by_algorithm": True})
+                                    "topic": "get/connected_vehicle/config", "subscribe_only": False})
     info: ConnectedInfo = field(default_factory=connected_info_factory, metadata={
-                                "topic": "get/connected_vehicle/info", "mutable_by_algorithm": True})
+                                "topic": "get/connected_vehicle/info", "subscribe_only": False})
     soc: ConnectedSoc = field(default_factory=connected_soc_factory, metadata={
-                              "topic": "get/connected_vehicle/soc", "mutable_by_algorithm": True})
+                              "topic": "get/connected_vehicle/soc", "subscribe_only": False})
 
 
 @dataclass
@@ -88,33 +88,33 @@ def connected_vehicle_factory() -> ConnectedVehicle:
 
 @dataclass
 class Get:
-    charge_state: bool = field(default=False, metadata={"topic": "get/charge_state", "mutable_by_algorithm": False})
+    charge_state: bool = field(default=False, metadata={"topic": "get/charge_state", "subscribe_only": True})
     connected_vehicle: ConnectedVehicle = field(default_factory=connected_vehicle_factory)
     currents: List[float] = field(default_factory=currents_list_factory, metadata={
-                                  "topic": "get/currents", "mutable_by_algorithm": False})
-    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported", "mutable_by_algorithm": True})
-    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported", "mutable_by_algorithm": True})
+                                  "topic": "get/currents", "subscribe_only": True})
+    daily_imported: float = field(default=0, metadata={"topic": "get/daily_imported", "subscribe_only": False})
+    daily_exported: float = field(default=0, metadata={"topic": "get/daily_exported", "subscribe_only": False})
     evse_current: Optional[float] = field(
-        default=None, metadata={"topic": "get/daily_exported", "mutable_by_algorithm": False})
-    exported: float = field(default=0, metadata={"topic": "get/exported", "mutable_by_algorithm": False})
-    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str", "mutable_by_algorithm": True})
-    fault_state: int = field(default=0, metadata={"topic": "get/fault_state", "mutable_by_algorithm": True})
-    imported: float = field(default=0, metadata={"topic": "get/imported", "mutable_by_algorithm": False})
-    phases_in_use: int = field(default=0, metadata={"topic": "get/phases_in_use", "mutable_by_algorithm": False})
-    plug_state: bool = field(default=False, metadata={"topic": "get/plug_state", "mutable_by_algorithm": False})
-    power: float = field(default=0, metadata={"topic": "get/power", "mutable_by_algorithm": False})
+        default=None, metadata={"topic": "get/daily_exported", "subscribe_only": True})
+    exported: float = field(default=0, metadata={"topic": "get/exported", "subscribe_only": True})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str", "subscribe_only": False})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state", "subscribe_only": False})
+    imported: float = field(default=0, metadata={"topic": "get/imported", "subscribe_only": True})
+    phases_in_use: int = field(default=0, metadata={"topic": "get/phases_in_use", "subscribe_only": True})
+    plug_state: bool = field(default=False, metadata={"topic": "get/plug_state", "subscribe_only": True})
+    power: float = field(default=0, metadata={"topic": "get/power", "subscribe_only": True})
     rfid_timestamp: Optional[float] = field(
-        default=None, metadata={"topic": "get/rfid_timestamp", "mutable_by_algorithm": False})
-    rfid: Optional[int] = field(default=None, metadata={"topic": "get/rfid", "mutable_by_algorithm": False})
+        default=None, metadata={"topic": "get/rfid_timestamp", "subscribe_only": True})
+    rfid: Optional[int] = field(default=None, metadata={"topic": "get/rfid", "subscribe_only": True})
     serial_number: Optional[str] = field(
-        default=None, metadata={"topic": "get/serial_number", "mutable_by_algorithm": False})
-    soc: Optional[float] = field(default=None, metadata={"topic": "get/soc", "mutable_by_algorithm": False})
+        default=None, metadata={"topic": "get/serial_number", "subscribe_only": True})
+    soc: Optional[float] = field(default=None, metadata={"topic": "get/soc", "subscribe_only": True})
     soc_timestamp: Optional[int] = field(
-        default=None, metadata={"topic": "get/soc_timestamp", "mutable_by_algorithm": False})
-    state_str: Optional[str] = field(default=None, metadata={"topic": "get/state_str", "mutable_by_algorithm": True})
-    vehicle_id: Optional[str] = field(default=None, metadata={"topic": "get/vehicle_id", "mutable_by_algorithm": False})
+        default=None, metadata={"topic": "get/soc_timestamp", "subscribe_only": True})
+    state_str: Optional[str] = field(default=None, metadata={"topic": "get/state_str", "subscribe_only": False})
+    vehicle_id: Optional[str] = field(default=None, metadata={"topic": "get/vehicle_id", "subscribe_only": True})
     voltages: List[float] = field(default_factory=voltages_list_factory, metadata={
-                                  "topic": "get/voltages", "mutable_by_algorithm": False})
+                                  "topic": "get/voltages", "subscribe_only": True})
 
 
 def ev_factory() -> Ev:
@@ -128,18 +128,18 @@ def log_factory() -> Log:
 @dataclass
 class Set:
     change_ev_permitted: bool = False
-    charging_ev: int = field(default=-1, metadata={"topic": "set/charging_ev", "mutable_by_algorithm": True})
-    charging_ev_prev: int = field(default=-1, metadata={"topic": "set/charging_ev_prev", "mutable_by_algorithm": True})
-    current: float = field(default=0, metadata={"topic": "set/current", "mutable_by_algorithm": True})
+    charging_ev: int = field(default=-1, metadata={"topic": "set/charging_ev", "subscribe_only": False})
+    charging_ev_prev: int = field(default=-1, metadata={"topic": "set/charging_ev_prev", "subscribe_only": False})
+    current: float = field(default=0, metadata={"topic": "set/current", "subscribe_only": False})
     loadmanagement_available: bool = True
-    log: Log = field(default_factory=log_factory, metadata={"topic": "set/log", "mutable_by_algorithm": True})
-    manual_lock: bool = field(default=False, metadata={"topic": "set/manual_lock", "mutable_by_algorithm": True})
-    phases_to_use: int = field(default=0, metadata={"topic": "set/phases_to_use", "mutable_by_algorithm": True})
+    log: Log = field(default_factory=log_factory, metadata={"topic": "set/log", "subscribe_only": False})
+    manual_lock: bool = field(default=False, metadata={"topic": "set/manual_lock", "subscribe_only": False})
+    phases_to_use: int = field(default=0, metadata={"topic": "set/phases_to_use", "subscribe_only": False})
     plug_state_prev: bool = field(default=False, metadata={
-                                  "topic": "set/plug_state_prev", "mutable_by_algorithm": True})
-    plug_time: Optional[float] = field(default=None, metadata={"topic": "set/plug_time", "mutable_by_algorithm": True})
+                                  "topic": "set/plug_state_prev", "subscribe_only": False})
+    plug_time: Optional[float] = field(default=None, metadata={"topic": "set/plug_time", "subscribe_only": False})
     required_power: float = 0
-    rfid: Optional[str] = field(default=None, metadata={"topic": "set/rfid", "mutable_by_algorithm": True})
+    rfid: Optional[str] = field(default=None, metadata={"topic": "set/rfid", "subscribe_only": False})
     target_current: float = 0  # Sollstrom aus fest vorgegebener Stromstärke
     charging_ev_data: Ev = field(default_factory=ev_factory)
 
@@ -199,7 +199,7 @@ class ChargepointData:
     control_parameter: ControlParameter = field(default_factory=control_parameter_factory)
     get: Get = field(default_factory=get_factory)
     set: Set = field(default_factory=set_factory)
-    config: Config = field(default_factory=config_factory, metadata={"topic": "config", "mutable_by_algorithm": False})
+    config: Config = field(default_factory=config_factory, metadata={"topic": "config", "subscribe_only": True})
 
     def set_event(self, event: Optional[threading.Event] = None) -> None:
         self.event_update_state = event

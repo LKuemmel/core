@@ -47,14 +47,14 @@ def get_charge_template_default() -> dict:
 @dataclass
 class ScheduledCharging:
     plans: Dict[int, ScheduledChargingPlan] = field(default_factory=empty_dict_factory, metadata={
-                                                    "topic": "", "mutable_by_algorithm": False})
+                                                    "topic": "", "subscribe_only": True})
 
 
 @dataclass
 class TimeCharging:
     active: bool = False
     plans: Dict[int, TimeChargingPlan] = field(default_factory=empty_dict_factory, metadata={
-                                               "topic": "", "mutable_by_algorithm": False})
+                                               "topic": "", "subscribe_only": True})
 
 
 @dataclass
@@ -154,7 +154,7 @@ class EvTemplate:
     """
 
     data: EvTemplateData = field(default_factory=ev_template_data_factory, metadata={
-                                 "topic": "config", "mutable_by_algorithm": False})
+                                 "topic": "config", "subscribe_only": True})
     et_num: int = 0
 
 
@@ -165,7 +165,7 @@ def ev_template_factory() -> EvTemplate:
 @dataclass
 class Set:
     soc_error_counter: int = field(
-        default=0, metadata={"topic": "set/soc_error_counter", "mutable_by_algorithm": False})
+        default=0, metadata={"topic": "set/soc_error_counter", "subscribe_only": True})
 
 
 def set_factory() -> Set:
@@ -174,14 +174,14 @@ def set_factory() -> Set:
 
 @dataclass
 class Get:
-    soc: Optional[int] = field(default=None, metadata={"topic": "get/soc", "mutable_by_algorithm": False})
+    soc: Optional[int] = field(default=None, metadata={"topic": "get/soc", "subscribe_only": True})
     soc_timestamp: Optional[float] = field(
-        default=None, metadata={"topic": "get/soc_timestamp", "mutable_by_algorithm": False})
+        default=None, metadata={"topic": "get/soc_timestamp", "subscribe_only": True})
     force_soc_update: bool = field(default=False, metadata={
-                                   "topic": "get/force_soc_update", "mutable_by_algorithm": True})
-    range: Optional[float] = field(default=None, metadata={"topic": "get/range", "mutable_by_algorithm": False})
-    fault_state: int = field(default=0, metadata={"topic": "get/fault_state", "mutable_by_algorithm": True})
-    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str", "mutable_by_algorithm": True})
+                                   "topic": "get/force_soc_update", "subscribe_only": False})
+    range: Optional[float] = field(default=None, metadata={"topic": "get/range", "subscribe_only": True})
+    fault_state: int = field(default=0, metadata={"topic": "get/fault_state", "subscribe_only": False})
+    fault_str: str = field(default=NO_ERROR, metadata={"topic": "get/fault_str", "subscribe_only": False})
 
 
 def get_factory() -> Get:
@@ -191,11 +191,11 @@ def get_factory() -> Get:
 @dataclass
 class EvData:
     set: Set = field(default_factory=set_factory)
-    charge_template: int = field(default=0, metadata={"topic": "charge_template", "mutable_by_algorithm": False})
-    ev_template: int = field(default=0, metadata={"topic": "ev_template", "mutable_by_algorithm": False})
-    name: str = field(default="Standard-Fahrzeug", metadata={"topic": "name", "mutable_by_algorithm": False})
+    charge_template: int = field(default=0, metadata={"topic": "charge_template", "subscribe_only": True})
+    ev_template: int = field(default=0, metadata={"topic": "ev_template", "subscribe_only": True})
+    name: str = field(default="Standard-Fahrzeug", metadata={"topic": "name", "subscribe_only": True})
     tag_id: List[str] = field(default_factory=empty_list_factory, metadata={
-                              "topic": "tag_id", "mutable_by_algorithm": False})
+                              "topic": "tag_id", "subscribe_only": True})
     get: Get = field(default_factory=get_factory)
 
 
@@ -575,7 +575,7 @@ class ChargeTemplate:
 
     def __init__(self, index):
         self.data: ChargeTemplateData = field(default_factory=charge_template_data_factory, metadata={
-                                              "topic": "", "mutable_by_algorithm": False})
+                                              "topic": "", "subscribe_only": True})
         self.ct_num = index
 
     TIME_CHARGING_NO_PLAN_CONFIGURED = "Keine Ladung, da keine Zeitfenster für Zeitladen konfiguriert sind."

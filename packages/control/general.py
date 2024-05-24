@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 @dataclass
 class InstantCharging:
     phases_to_use: int = field(default=1, metadata={
-        "topic": "chargemode_config/instant_charging/phases_to_use", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/instant_charging/phases_to_use", "subscribe_only": True})
 
 
 def instant_charging_factory() -> InstantCharging:
@@ -34,33 +34,33 @@ def control_range_factory() -> List:
 @dataclass
 class PvCharging:
     bat_power_reserve: int = field(default=2000, metadata={
-        "topic": "chargemode_config/pv_charging/bat_power_reserve", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/bat_power_reserve", "subscribe_only": True})
     bat_power_reserve_active: bool = field(default=False, metadata={
-        "topic": "chargemode_config/pv_charging/bat_power_reserve_active", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/bat_power_reserve_active", "subscribe_only": True})
     control_range: List = field(default_factory=control_range_factory, metadata={
-        "topic": "chargemode_config/pv_charging/control_range", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/control_range", "subscribe_only": True})
     feed_in_yield: int = field(default=15000, metadata={
-        "topic": "chargemode_config/pv_charging/feed_in_yield", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/feed_in_yield", "subscribe_only": True})
     phase_switch_delay: int = field(default=7, metadata={
-        "topic": "chargemode_config/pv_charging/phase_switch_delay", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/phase_switch_delay", "subscribe_only": True})
     phases_to_use: int = field(default=1, metadata={
-        "topic": "chargemode_config/pv_charging/phases_to_use", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/phases_to_use", "subscribe_only": True})
     bat_power_discharge: int = field(default=1500, metadata={
-        "topic": "chargemode_config/pv_charging/bat_power_discharge", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/bat_power_discharge", "subscribe_only": True})
     bat_power_discharge_active: bool = field(default=False, metadata={
-        "topic": "chargemode_config/pv_charging/bat_power_discharge_active", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/bat_power_discharge_active", "subscribe_only": True})
     min_bat_soc: int = field(default=50, metadata={
-        "topic": "chargemode_config/pv_charging/min_bat_soc", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/min_bat_soc", "subscribe_only": True})
     bat_mode: BatConsiderationMode = field(default=BatConsiderationMode.EV_MODE.value, metadata={
-        "topic": "chargemode_config/pv_charging/bat_mode", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/bat_mode", "subscribe_only": True})
     switch_off_delay: int = field(default=60, metadata={
-                                  "topic": "chargemode_config/pv_charging/switch_off_delay", "mutable_by_algorithm": False})
+                                  "topic": "chargemode_config/pv_charging/switch_off_delay", "subscribe_only": True})
     switch_off_threshold: int = field(default=5, metadata={
-        "topic": "chargemode_config/pv_charging/switch_off_threshold", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/switch_off_threshold", "subscribe_only": True})
     switch_on_delay: int = field(default=30, metadata={
-        "topic": "chargemode_config/pv_charging/switch_on_delay", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/switch_on_delay", "subscribe_only": True})
     switch_on_threshold: int = field(default=1500, metadata={
-        "topic": "chargemode_config/pv_charging/switch_on_threshold", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/pv_charging/switch_on_threshold", "subscribe_only": True})
 
 
 def pv_charging_factory() -> PvCharging:
@@ -70,7 +70,7 @@ def pv_charging_factory() -> PvCharging:
 @dataclass
 class ScheduledCharging:
     phases_to_use: int = field(default=0, metadata={
-        "topic": "chargemode_config/scheduled_charging/phases_to_use", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/scheduled_charging/phases_to_use", "subscribe_only": True})
 
 
 def scheduled_charging_factory() -> ScheduledCharging:
@@ -80,7 +80,7 @@ def scheduled_charging_factory() -> ScheduledCharging:
 @dataclass
 class TimeCharging:
     phases_to_use: int = field(default=1, metadata={
-        "topic": "chargemode_config/time_charging/phases_to_use", "mutable_by_algorithm": False})
+        "topic": "chargemode_config/time_charging/phases_to_use", "subscribe_only": True})
 
 
 def time_charging_factory() -> TimeCharging:
@@ -93,13 +93,13 @@ class ChargemodeConfig:
     pv_charging: PvCharging = field(default_factory=pv_charging_factory)
     retry_failed_phase_switches: bool = field(
         default=False,
-        metadata={"topic": "chargemode_config/retry_failed_phase_switches", "mutable_by_algorithm": False})
+        metadata={"topic": "chargemode_config/retry_failed_phase_switches", "subscribe_only": True})
     scheduled_charging: ScheduledCharging = field(default_factory=scheduled_charging_factory)
     time_charging: TimeCharging = field(default_factory=time_charging_factory)
     unbalanced_load_limit: int = field(
-        default=18, metadata={"topic": "chargemode_config/unbalanced_load_limit", "mutable_by_algorithm": False})
+        default=18, metadata={"topic": "chargemode_config/unbalanced_load_limit", "subscribe_only": True})
     unbalanced_load: bool = field(default=False, metadata={
-                                  "topic": "chargemode_config/unbalanced_load", "mutable_by_algorithm": False})
+                                  "topic": "chargemode_config/unbalanced_load", "subscribe_only": True})
 
 
 def chargemode_config_factory() -> ChargemodeConfig:
@@ -109,11 +109,11 @@ def chargemode_config_factory() -> ChargemodeConfig:
 @dataclass
 class RippleControlReceiverGet:
     fault_state: int = field(default=0, metadata={
-                             "topic": "ripple_control_receiver/get/fault_state", "mutable_by_algorithm": True})
+                             "topic": "ripple_control_receiver/get/fault_state", "subscribe_only": False})
     fault_str: str = field(default=NO_ERROR, metadata={
-                           "topic": "ripple_control_receiver/get/fault_str", "mutable_by_algorithm": True})
+                           "topic": "ripple_control_receiver/get/fault_str", "subscribe_only": False})
     override_value: float = field(default=100, metadata={
-        "topic": "ripple_control_receiver/get/override_value", "mutable_by_algorithm": True})
+        "topic": "ripple_control_receiver/get/override_value", "subscribe_only": False})
 
 
 def rcr_get_factory() -> RippleControlReceiverGet:
@@ -133,7 +133,7 @@ class OverrideReference(Enum):
 class RippleControlReceiver:
     get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
     module: ConfigurableRcr = field(default_factory=gpio_rcr_factory, metadata={
-                                    "topic": "ripple_control_receiver/module", "mutable_by_algorithm": False})
+                                    "topic": "ripple_control_receiver/module", "subscribe_only": True})
     overrice_reference: OverrideReference = OverrideReference.CHARGEPOINT
 
 
@@ -143,10 +143,10 @@ def ripple_control_receiver_factory() -> RippleControlReceiver:
 
 @dataclass
 class Prices:
-    bat: float = field(default=0.0002, metadata={"topic": "prices/bat", "mutable_by_algorithm": False})
-    cp: float = field(default=0, metadata={"topic": "prices/cp", "mutable_by_algorithm": False})
-    grid: float = field(default=0.0003, metadata={"topic": "prices/grid", "mutable_by_algorithm": False})
-    pv: float = field(default=0.00015, metadata={"topic": "prices/pv", "mutable_by_algorithm": False})
+    bat: float = field(default=0.0002, metadata={"topic": "prices/bat", "subscribe_only": True})
+    cp: float = field(default=0, metadata={"topic": "prices/cp", "subscribe_only": True})
+    grid: float = field(default=0.0003, metadata={"topic": "prices/grid", "subscribe_only": True})
+    pv: float = field(default=0.00015, metadata={"topic": "prices/pv", "subscribe_only": True})
 
 
 def prices_factory() -> Prices:
@@ -156,20 +156,20 @@ def prices_factory() -> Prices:
 @dataclass
 class GeneralData:
     chargemode_config: ChargemodeConfig = field(default_factory=chargemode_config_factory)
-    control_interval: int = field(default=10, metadata={"topic": "control_interval", "mutable_by_algorithm": False})
+    control_interval: int = field(default=10, metadata={"topic": "control_interval", "subscribe_only": True})
     extern_display_mode: str = field(default="primary", metadata={
-                                     "topic": "extern_display_mode", "mutable_by_algorithm": False})
-    extern: bool = field(default=False, metadata={"topic": "extern", "mutable_by_algorithm": False})
+                                     "topic": "extern_display_mode", "subscribe_only": True})
+    extern: bool = field(default=False, metadata={"topic": "extern", "subscribe_only": True})
     external_buttons_hw: bool = field(
-        default=False, metadata={"topic": "external_buttons_hw", "mutable_by_algorithm": False})
+        default=False, metadata={"topic": "external_buttons_hw", "subscribe_only": True})
     grid_protection_active: bool = field(
-        default=False, metadata={"topic": "grid_protection_active", "mutable_by_algorithm": True})
+        default=False, metadata={"topic": "grid_protection_active", "subscribe_only": False})
     grid_protection_configured: bool = field(
-        default=True, metadata={"topic": "grid_protection_configured", "mutable_by_algorithm": False})
+        default=True, metadata={"topic": "grid_protection_configured", "subscribe_only": True})
     grid_protection_random_stop: int = field(
-        default=0, metadata={"topic": "grid_protection_random_stop", "mutable_by_algorithm": True})
+        default=0, metadata={"topic": "grid_protection_random_stop", "subscribe_only": False})
     grid_protection_timestamp: Optional[float] = field(
-        default=None, metadata={"topic": "grid_protection_timestamp", "mutable_by_algorithm": True})
+        default=None, metadata={"topic": "grid_protection_timestamp", "subscribe_only": False})
     mqtt_bridge: bool = False
     prices: Prices = field(default_factory=prices_factory)
     range_unit: str = "km"

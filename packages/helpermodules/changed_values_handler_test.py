@@ -23,8 +23,8 @@ def sample_class() -> SampleClass:
 
 @dataclass
 class SampleNested:
-    parameter1: bool = field(default=False, metadata={"topic": "get/nested1", "mutable_by_algorithm": True})
-    parameter2: int = field(default=0, metadata={"topic": "get/nested2", "mutable_by_algorithm": True})
+    parameter1: bool = field(default=False, metadata={"topic": "get/nested1", "subscribe_only": False})
+    parameter2: int = field(default=0, metadata={"topic": "get/nested2", "subscribe_only": False})
 
 
 def sample_nested() -> SampleNested:
@@ -41,25 +41,25 @@ def sample_tuple_factory() -> Tuple:
 
 @dataclass
 class SampleData:
-    sample_field_bool: bool = field(default=False, metadata={"topic": "get/field_bool", "mutable_by_algorithm": True})
+    sample_field_bool: bool = field(default=False, metadata={"topic": "get/field_bool", "subscribe_only": False})
     sample_field_class: SampleClass = field(
-        default_factory=sample_class, metadata={"topic": "get/field_class", "mutable_by_algorithm": True})
+        default_factory=sample_class, metadata={"topic": "get/field_class", "subscribe_only": False})
     sample_field_dict: Dict = field(default_factory=sample_dict_factory, metadata={
-        "topic": "get/field_dict", "mutable_by_algorithm": True})
+        "topic": "get/field_dict", "subscribe_only": False})
     sample_field_enum: ChargepointState = field(default=ChargepointState.CHARGING_ALLOWED, metadata={
-        "topic": "get/field_enum", "mutable_by_algorithm": True})
-    sample_field_float: float = field(default=0, metadata={"topic": "get/field_float", "mutable_by_algorithm": True})
-    sample_field_int: int = field(default=0, metadata={"topic": "get/field_int", "mutable_by_algorithm": True})
+        "topic": "get/field_enum", "subscribe_only": False})
+    sample_field_float: float = field(default=0, metadata={"topic": "get/field_float", "subscribe_only": False})
+    sample_field_int: int = field(default=0, metadata={"topic": "get/field_int", "subscribe_only": False})
     sample_field_immutable: float = field(
-        default=0, metadata={"topic": "get/field_immutable", "mutable_by_algorithm": False})
+        default=0, metadata={"topic": "get/field_immutable", "subscribe_only": True})
     sample_field_list: List = field(default_factory=currents_list_factory, metadata={
-                                    "topic": "get/field_list", "mutable_by_algorithm": True})
+                                    "topic": "get/field_list", "subscribe_only": False})
     sample_field_nested: SampleNested = field(default_factory=sample_nested)
     sample_field_none: Optional[str] = field(
-        default="Hi", metadata={"topic": "get/field_none", "mutable_by_algorithm": True})
-    sample_field_str: str = field(default="Hi", metadata={"topic": "get/field_str", "mutable_by_algorithm": True})
+        default="Hi", metadata={"topic": "get/field_none", "subscribe_only": False})
+    sample_field_str: str = field(default="Hi", metadata={"topic": "get/field_str", "subscribe_only": False})
     sample_field_tuple: Tuple = field(default_factory=sample_tuple_factory, metadata={
-                                      "topic": "get/field_tuple", "mutable_by_algorithm": True})
+                                      "topic": "get/field_tuple", "subscribe_only": False})
 
 
 @dataclass
