@@ -11,7 +11,7 @@ from control.bat_all import BatConsiderationMode
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
-from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
+from modules.common.configurable_io import ConfigurableIo
 from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.ripple_control_receivers.gpio.ripple_control_receiver import create_ripple_control_receiver
 
@@ -97,7 +97,7 @@ def rcr_get_factory() -> RippleControlReceiverGet:
     return RippleControlReceiverGet()
 
 
-def gpio_rcr_factory() -> ConfigurableRcr:
+def gpio_rcr_factory() -> ConfigurableIo:
     return create_ripple_control_receiver(GpioRcr())
 
 
@@ -109,7 +109,7 @@ class OverrideReference(Enum):
 @dataclass
 class RippleControlReceiver:
     get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
-    module: ConfigurableRcr = field(default_factory=gpio_rcr_factory)
+    module: ConfigurableIo = field(default_factory=gpio_rcr_factory)
     overrice_reference: OverrideReference = OverrideReference.CHARGEPOINT
 
 

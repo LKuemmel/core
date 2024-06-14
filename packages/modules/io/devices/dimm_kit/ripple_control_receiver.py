@@ -5,10 +5,11 @@ import socket
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import RcrState
-from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
+from modules.common.configurable_io import ConfigurableIo
 from modules.common.modbus import ModbusTcpClient_
 from modules.common.version_by_telnet import get_version_by_telnet
-from modules.ripple_control_receivers.dimm_kit.config import IoLanRcr
+from modules.io import actions
+from modules.io.devices.dimm_kit.config import IoLan
 
 log = logging.getLogger(__name__)
 
@@ -21,18 +22,13 @@ class State(Enum):
 VALID_VERSIONS = ["openWB DimmModul"]
 
 
-def create_ripple_control_receiver(config: IoLanRcr):
+def create_io(config: IoLan):
     def updater():
         if version:
-            r1 = State(client.read_coils(0x0000, 1, unit=config.configuration.modbus_id))
-            r2 = State(client.read_coils(0x0001, 1, unit=config.configuration.modbus_id))
-            log.debug(f"RSE-Kontakt 1: {r1}, RSE-Kontakt 2: {r2}")
-            if r1 == State.OPENED or r2 == State.OPENED:
-                override_value = 0
-            else:
-                override_value = 100
-            return RcrState(override_value=override_value)
-
+            input_1 = State(client.read_coils(0x0000, 1, unit=config.configuration.modbus_id))
+            input_2 = State(client.read_coils(0x0001, 1, unit=config.configuration.modbus_id))
+            [getattr(actions, config.actions[f"input_{i}"]["action"])(getattr(__name__, f"input_{i}"),
+                                                                      config.actions[f"input_{i}"]["action_parameters"]) for i in range(1, 11)]
     try:
         version = False
         client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
@@ -54,7 +50,7 @@ def create_ripple_control_receiver(config: IoLanRcr):
             raise e
     except Exception:
         log.exception("Fehler in create_device")
-    return ConfigurableRcr(config=config, component_updater=updater)
+    return ConfigurableIo(config=config, component_updater=updater)
 
 
-device_descriptor = DeviceDescriptor(configuration_factory=IoLanRcr)
+device_descriptor = DeviceDescriptor(configuration_factory=IoLan)

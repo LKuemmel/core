@@ -15,5 +15,5 @@ class RippleControlReceiverValueStore(ValueStore[RcrState]):
         pub_to_broker("openWB/set/general/ripple_control_receiver/get/override_value", self.state.override_value)
 
 
-def get_ripple_control_receiver_value_store() -> ValueStore[RcrState]:
+def get_io_value_store() -> ValueStore[RcrState]:
     return LoggingValueStore(RippleControlReceiverValueStore())
