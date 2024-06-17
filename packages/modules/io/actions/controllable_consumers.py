@@ -1,11 +1,13 @@
+from helpermodules.pub import Pub
+
+
 def direct_control_cp(input_state: bool, cp_num: int) -> None:
     # pub state to cp
     pass
 
 
 def dim(input_state: bool) -> None:
-    # pub state to dim
-    pass
+    Pub().pub("openWB/set/general/ripple_control_receiver/get/active", input_state)
 
 
 def ripple_control_receiver(input_state: bool) -> None:
