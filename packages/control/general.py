@@ -1,14 +1,14 @@
 """Allgemeine Einstellungen
 """
 from dataclasses import dataclass, field
-from enum import Enum
 import logging
 import random
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from control import data
 from control.bat_all import BatConsiderationMode
 from control.chargemode import Chargemode
+from dataclass_utils.factories import empty_list_factory
 from helpermodules.constants import NO_ERROR
 from helpermodules import timecheck
 from modules.common.configurable_io import ConfigurableIo
@@ -112,39 +112,42 @@ def chargemode_config_factory() -> ChargemodeConfig:
 
 
 @dataclass
-class RippleControlReceiverGet:
+class DimmingGet:
     fault_state: int = field(default=0, metadata={
-                             "topic": "ripple_control_receiver/get/fault_state"})
+                             "topic": "dimming/get/fault_state"})
     fault_str: str = field(default=NO_ERROR, metadata={
-                           "topic": "ripple_control_receiver/get/fault_str"})
-    override_value: float = field(default=100, metadata={
-        "topic": "ripple_control_receiver/get/override_value"})
+                           "topic": "dimming/get/fault_str"})
+    active: bool = field(default=False, metadata={
+        "topic": "dimming/get/override_value"})
 
 
-def rcr_get_factory() -> RippleControlReceiverGet:
-    return RippleControlReceiverGet()
+def dimming_get_factory() -> DimmingGet:
+    return DimmingGet()
 
 
 def gpio_rcr_factory() -> ConfigurableIo:
     return create_ripple_control_receiver(GpioRcr())
 
 
-class OverrideReference(Enum):
-    EVU = "evu"
-    CHARGEPOINT = "chargepoint"
+@dataclass
+class DimmingSet:
+    max_import_power: float = 0
+    devices: List[str] = field(default_factory=empty_list_factory)
+
+
+def dimming_set_factory() -> DimmingSet:
+    return DimmingSet()
 
 
 @dataclass
-class RippleControlReceiver:
-    get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
-    module: Optional[Dict] = field(default=None, metadata={
-        "topic": "ripple_control_receiver/module"})
-    override_reference: OverrideReference = field(default=OverrideReference.CHARGEPOINT, metadata={
-        "topic": "ripple_control_receiver/override_reference"})
+class Dimming:
+    get: DimmingGet = field(default_factory=dimming_get_factory)
+    set: DimmingSet = field(default_factory=dimming_set_factory)
+    module: ConfigurableIo = field(default_factory=gpio_rcr_factory)
 
 
-def ripple_control_receiver_factory() -> RippleControlReceiver:
-    return RippleControlReceiver()
+def dimming_factory() -> Dimming:
+    return Dimming()
 
 
 @dataclass
@@ -181,7 +184,7 @@ class GeneralData:
     mqtt_bridge: bool = False
     prices: Prices = field(default_factory=prices_factory)
     range_unit: str = "km"
-    ripple_control_receiver: RippleControlReceiver = field(default_factory=ripple_control_receiver_factory)
+    dimming: Dimming = field(default_factory=dimming_factory)
 
 
 class General:
