@@ -65,6 +65,7 @@ def get_factory() -> Get:
 @dataclass
 class Set:
     error_counter: int = 0
+    dimming_power_left: float = 0
     reserved_surplus: float = 0
     released_surplus: float = 0
     raw_power_left: float = 0
@@ -100,6 +101,7 @@ class Counter:
             self._set_loadmanagement_state()
             self._set_current_left()
             self._set_power_left()
+            self._set_dimming_power_left()
             if self.data.get.fault_state == FaultStateLevel.ERROR:
                 self.data.get.power = 0
                 return
@@ -169,6 +171,13 @@ class Counter:
             log.info(f'Verbleibende Leistung an Zähler {self.num}: {self.data.set.raw_power_left}W')
         else:
             self.data.set.raw_power_left = None
+
+    def _set_dimming_power_left(self) -> None:
+        if self.num == data.data.counter_all_data.get_evu_counter():
+            if data.data.general_data.data.dimming.get.active:
+                self.data.set.dimming_power_left = data.data.general_data.data.dimming.set.max_import_power
+        else:
+            self.data.set.dimming_power_left = None
 
     def update_values_left(self, diffs) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))

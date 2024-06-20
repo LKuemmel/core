@@ -14,9 +14,12 @@ class Loadmanagement:
     def get_available_currents(self,
                                missing_currents: List[float],
                                counter: Counter,
+                               dimming_via_direct_control: bool,
                                feed_in: int = 0) -> Tuple[List[float], Optional[LimitingValue]]:
         raw_currents_left = counter.data.set.raw_currents_left
-        available_currents, limit = self._limit_by_current(missing_currents, raw_currents_left)
+        available_currents, limit = self._limit_by_dimming_via_direct_control(
+            missing_currents, dimming_via_direct_control)
+        available_currents, limit = self._limit_by_current(available_currents, raw_currents_left)
         available_currents, limit_power = self._limit_by_power(
             available_currents, counter.data.set.raw_power_left, feed_in)
         if limit_power is not None:
@@ -31,9 +34,12 @@ class Loadmanagement:
     def get_available_currents_surplus(self,
                                        missing_currents: List[float],
                                        counter: Counter,
+                                       dimming_via_direct_control: bool,
                                        feed_in: int = 0) -> Tuple[List[float], Optional[LimitingValue]]:
         raw_currents_left = counter.data.set.raw_currents_left
-        available_currents, limit = self._limit_by_current(missing_currents, raw_currents_left)
+        available_currents, limit = self._limit_by_dimming_via_direct_control(
+            missing_currents, dimming_via_direct_control)
+        available_currents, limit = self._limit_by_current(available_currents, raw_currents_left)
         available_currents, limit_power = self._limit_by_power(
             available_currents, counter.data.set.surplus_power_left, feed_in)
         if limit_power is not None:
@@ -89,3 +95,24 @@ class Loadmanagement:
             log.debug(f"Stromüberschreitung {missing_currents}W korrigieren: {available_currents}")
             limit = LimitingValue.CURRENT
         return available_currents, limit
+
+    def _limit_by_dimming_via_direct_control(self,
+                                             missing_currents: List[float],
+                                             dimming_via_direct_control: bool) -> Tuple[List[float], Optional[LimitingValue]]:
+        if dimming_via_direct_control:
+            phases = 3-missing_currents.count(0)
+            current_per_phase = 4.2/phases
+            available_currents = [current_per_phase if c > 0 else 0 for c in missing_currents]
+            log.debug(f"Dimmung per Direkt-Steuerung: {available_currents}")
+            return available_currents, LimitingValue.DIMMING_VIA_DIRECT_CONTROL  # String braucht Ladepunkt-Nummer
+        else:
+            return missing_currents, None
+
+    def _limit_by_dimming(self,
+                          available_currents: List[float],
+                          counter: Counter,) -> None:
+        if counter.data.set.dimming_power_left is not None and cp in data.data.general_data.data.dimming.set.devices:
+            if sum(available_currents)*230 > counter.data.set.dimming_power_left:
+                phases = 3-available_currents.count(0)
+                overload_per_phase = (sum(available_currents) - counter.data.set.dimming_power_left/230)/phases
+                available_currents = [c - overload_per_phase if c > 0 else 0 for c in available_currents]

@@ -8,6 +8,7 @@ from typing import List, Optional
 
 from control import data
 from control.bat_all import BatConsiderationMode
+from dataclass_utils.factories import empty_list_factory
 from helpermodules.constants import NO_ERROR
 from helpermodules.pub import Pub
 from helpermodules import timecheck
@@ -87,34 +88,39 @@ def chargemode_config_factory() -> ChargemodeConfig:
 
 
 @dataclass
-class RippleControlReceiverGet:
+class DimmingGet:
     fault_state: int = 0
     fault_str: str = NO_ERROR
-    override_value: float = 100
+    active: bool = False
 
 
-def rcr_get_factory() -> RippleControlReceiverGet:
-    return RippleControlReceiverGet()
+def dimming_get_factory() -> DimmingGet:
+    return DimmingGet()
 
 
 def gpio_rcr_factory() -> ConfigurableIo:
     return create_ripple_control_receiver(GpioRcr())
 
 
-class OverrideReference(Enum):
-    EVU = "evu"
-    CHARGEPOINT = "chargepoint"
+@dataclass
+class DimmingSet:
+    max_import_power: float = 0
+    devices: List[str] = field(default_factory=empty_list_factory)
+
+
+def dimming_set_factory() -> DimmingSet:
+    return DimmingSet()
 
 
 @dataclass
-class RippleControlReceiver:
-    get: RippleControlReceiverGet = field(default_factory=rcr_get_factory)
+class Dimming:
+    get: DimmingGet = field(default_factory=dimming_get_factory)
+    set: DimmingSet = field(default_factory=dimming_set_factory)
     module: ConfigurableIo = field(default_factory=gpio_rcr_factory)
-    overrice_reference: OverrideReference = OverrideReference.CHARGEPOINT
 
 
-def ripple_control_receiver_factory() -> RippleControlReceiver:
-    return RippleControlReceiver()
+def dimming_factory() -> Dimming:
+    return Dimming()
 
 
 @dataclass
@@ -143,7 +149,7 @@ class GeneralData:
     mqtt_bridge: bool = False
     prices: Prices = field(default_factory=prices_factory)
     range_unit: str = "km"
-    ripple_control_receiver: RippleControlReceiver = field(default_factory=ripple_control_receiver_factory)
+    dimming: Dimming = field(default_factory=dimming_factory)
 
 
 class General:
