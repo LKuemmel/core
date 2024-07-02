@@ -33,6 +33,7 @@ from modules.internal_chargepoint_handler.internal_chargepoint_handler import Ge
 from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
+from control.ocpp import OCPPClient
 
 logger.setup_logging()
 log = logging.getLogger()
@@ -191,6 +192,7 @@ try:
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
     rfid = RfidReader()
+    ocpp = OCPPClient()
     event_ev_template = threading.Event()
     event_ev_template.set()
     event_charge_template = threading.Event()
@@ -240,6 +242,10 @@ try:
     if rfid.keyboards_detected:
         t_rfid = Thread(target=rfid.run, args=(), name="Internal Chargepoint")
         t_rfid.start()
+
+    if ocpp.start_ocpp_client:
+        t_ocpp = Thread(target=ocpp.run, args=(), name="OCPP Communication")
+        t_ocpp.start()
 
     t_sub.start()
     t_set.start()
