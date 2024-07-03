@@ -557,10 +557,13 @@ class Command:
                   get_yearly_log(payload["data"]["year"]))
 
     def connectOcpp(self, connection_id: str, payload: dict) -> None:
-        ocpp_config = ocpp.get_ocpp_config()
+        ocpp_config = ocpp.OCPPClient.get_ocpp_config()
         ocpp_config["data"]["url"] = payload["data"]["url"]
-        ocpp.get_config(ocpp_config)
+        ocpp.OCPPClient.get_config(ocpp_config)
         ocpp.OCPPClient.start_ocpp()
+
+    def disconnectOcpp(self, connection_id: str, payload: dict) -> None:
+        ocpp.OCPPClient.stop_ocpp()
 
     def initCloud(self, connection_id: str, payload: dict) -> None:
         parent_file = Path(__file__).resolve().parents[2]

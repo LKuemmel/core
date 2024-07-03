@@ -10,6 +10,7 @@ import threading
 import traceback
 from threading import Thread
 from control.chargelog.chargelog import calculate_charge_cost
+from control.ocpp import OCPPClient
 
 from helpermodules.changed_values_handler import ChangedValuesContext
 from helpermodules.measurement_logging.update_yields import update_daily_yields, update_pv_monthly_yearly_yields
@@ -33,7 +34,6 @@ from modules.internal_chargepoint_handler.internal_chargepoint_handler import Ge
 from modules.internal_chargepoint_handler.rfid import RfidReader
 from modules.utils import wait_for_module_update_completed
 from smarthome.smarthome import readmq, smarthome_handler
-from control.ocpp import OCPPClient
 
 logger.setup_logging()
 log = logging.getLogger()
@@ -48,7 +48,7 @@ class HandlerAlgorithm:
         """ führt den Algorithmus durch.
         """
         try:
-            @exit_after(data.data.general_data.data.control_interval)
+        #    @exit_after(data.data.general_data.data.control_interval)
             def handler_with_control_interval():
                 if (data.data.general_data.data.control_interval / 10) == self.interval_counter:
                     data.data.copy_data()
@@ -68,6 +68,11 @@ class HandlerAlgorithm:
                         control.calc_current()
                         proc.process_algorithm_results()
                         data.data.graph_data.pub_graph_data()
+                        if OCPPClient.state_occp_client_start() and not OCPPClient.state_occp_client_run():
+                            for cp in data.data.cp_data.values():
+                                OCPPClient.ocpp_test(cp)
+                        if OCPPClient.state_occp_client_run():
+                            OCPPClient.ocpp_heartbeat()
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
@@ -126,6 +131,9 @@ class HandlerAlgorithm:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 sub.system_data["system"].update_ip_address()
+                if OCPPClient.state_occp_client_run():
+                    for cp in data.data.cp_data.values():
+                        OCPPClient.ocpp_send_meter_values(cp)
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
@@ -192,7 +200,6 @@ try:
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
     rfid = RfidReader()
-    ocpp = OCPPClient()
     event_ev_template = threading.Event()
     event_ev_template.set()
     event_charge_template = threading.Event()
@@ -242,10 +249,6 @@ try:
     if rfid.keyboards_detected:
         t_rfid = Thread(target=rfid.run, args=(), name="Internal Chargepoint")
         t_rfid.start()
-
-    if ocpp.start_ocpp_client:
-        t_ocpp = Thread(target=ocpp.run, args=(), name="OCPP Communication")
-        t_ocpp.start()
 
     t_sub.start()
     t_set.start()

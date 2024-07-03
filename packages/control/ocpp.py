@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 import asyncio
 from ocpp.v201.enums import RegistrationStatusType
 import websockets
@@ -9,22 +10,11 @@ import re
 import logging
 log = logging.getLogger(__name__)
 
-
-def get_ocpp_config():
-    return {
-        "data": {
-            "url": "",
-        },
-    }
-
-
-def get_config(occp_config):
-    url = occp_config["data"]["url"]
-    return url
-
-
 now = datetime.now()
 current_time = now.strftime("%Y-%m-%d")
+
+globvar_occp_client_start = False
+globvar_occp_client_run = False
 
 
 class ChargePoint(cp):
@@ -57,6 +47,7 @@ class ChargePoint(cp):
         transaction_str = str(response_strtT)[slice(str(response_strtT).index(("id_tag")))]
         transaction_id_resp = list(map(int, re.findall(r'\d+', transaction_str)))
         print("str:", transaction_id_resp[0])
+        return transaction_id_resp[0]
 
     async def stop_transaction(self):
         strtT = call.StartTransaction(connector_id=2,
@@ -78,66 +69,19 @@ class ChargePoint(cp):
         response_stpT = await self.call(stpT)
         print("response_stpT: ", response_stpT)
 
-    async def get_meter(self):
-        meter = call.MeterValues(
+    async def get_meter(self, meter_value_charged):
+        meter = call.MeterValuesPayload(
             connector_id=2,
             transaction_id=11,
             meter_value=[{"timestamp": current_time,
                           "sampledValue": [
                               {
-                                  "value": "0",
+                                  "value": f'{meter_value_charged}',
                                   "context": "Sample.Periodic",
                                   "format": "Raw",
                                   "measurand": "Energy.Active.Import.Register",
                                   "location": "Outlet",
                                   "unit": "Wh"
-                              },
-                              {
-                                  "value": "50000.0",
-                                  "context": "Sample.Periodic",
-                                  "format": "Raw",
-                                  "measurand": "Power.Active.Import",
-                                  "location": "Outlet",
-                                  "unit": "W"
-                              },
-                              {
-                                  "value": "50.0",
-                                  "context": "Sample.Periodic",
-                                  "format": "Raw",
-                                  "measurand": "Current.Import",
-                                  "location": "Outlet",
-                                  "unit": "A"
-                              },
-                              {
-                                  "value": "63.0",
-                                  "context": "Sample.Periodic",
-                                  "format": "Raw",
-                                  "measurand": "SoC",
-                                  "location": "EV",
-                                  "unit": "Percent"
-                              },
-                              {
-                                  "value": "298.8",
-                                  "context": "Sample.Periodic",
-                                  "format": "Raw",
-                                  "measurand": "Temperature",
-                                  "location": "Body",
-                                  "unit": "K"
-                              },
-                              {
-                                  "value": "270.4",
-                                  "context": "Sample.Periodic",
-                                  "format": "Raw",
-                                  "measurand": "Voltage",
-                                  "location": "Inlet",
-                                  "unit": "V"
-                              },
-                              {
-                                  "value": "60",
-                                  "context": "Sample.Periodic",
-                                  "format": "Raw",
-                                  "measurand": "Frequency",
-                                  "location": "Inlet",
                               },
                           ]}],
         )
@@ -148,40 +92,125 @@ class ChargePoint(cp):
 class OCPPClient(ChargePoint):
     _detect_chargepoints: list[ChargePoint] = []
 
-    def __init__(self) -> None:
-        try:
-            pass
-        except Exception:
-            log.exception("Fehler im OCPP-Modul")
+    globvar_url: str
 
-    def start_ocpp_client(self) -> bool:
-        return False
-        # return len(self._detect_OCPP) > 0
+    def get_ocpp_config():
+        return {
+            "data": {
+                "url": "",
+            },
+        }
+
+    def get_config(occp_config):
+        global globvar_url
+        globvar_url = occp_config["data"]["url"]
+
+    def get_url():
+        global globvar_url
+        return globvar_url
+
+    def ocpp_send_meter_values():
+        asyncio.run(send_meter_values_to_ocpp())
+
+    def ocpp_heartbeat():
+        asyncio.run(send_heartbeat_to_ocpp())
+
+    def ocpp_test(cp):
+        if cp.data.get.charge_state:
+            meter_value_charged = cp.data.get.imported
+            chargepoint_name = cp.data.config.name
+            print(chargepoint_name, meter_value_charged)
+            url = OCPPClient.get_url()
+            print(url)
+            asyncio.run(connect_to_ocpp(url))
+            global globvar_occp_client_run
+            globvar_occp_client_run = True
+            # asyncio.run(send_heartbeat_to_ocpp(url))
+
+    def state_occp_client_start():
+        global globvar_occp_client_start
+        return globvar_occp_client_start
+
+    def state_occp_client_run():
+        global globvar_occp_client_run
+        return globvar_occp_client_run
 
     def start_ocpp():
-        try:
-            asyncio.run(main())
-        except AttributeError:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(main())
-            loop.close()
+        global globvar_occp_client_start
+        globvar_occp_client_start = True
+        print(globvar_occp_client_start)
 
-    def run(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        for chargepoint in self._detected_chargepoints:
-            asyncio.ensure_future(self._read_events(chargepoint))
-        loop.run_forever()
+    def run_ocpp():
+        global globvar_occp_client_run
+        globvar_occp_client_run = True
+        print(globvar_occp_client_run)
+
+    def stop_ocpp():
+        global globvar_occp_client_run
+        globvar_occp_client_run = False
+        print(globvar_occp_client_run)
+        url = OCPPClient.get_url()
+        asyncio.run(stop_transaction_ocpp(url))
 
 
-async def main():
+async def connect_to_ocpp(url):
     async with websockets.connect(
-            'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
-            # url,
+            # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
+            url,
             subprotocols=['ocpp1.6']
     ) as ws:
         cp = ChargePoint('CP_1', ws)
 
-        await asyncio.gather(cp.start(), cp.send_boot_notification(), cp.send_heart_beat(),
-                             cp.start_transaction(), cp.get_meter(), cp.stop_transaction())
-        await ws.wait_closed()
+        return await asyncio.gather(cp.start(), cp.send_boot_notification())
+        # time.sleep(30)
+        # return await asyncio.Event().wait(True)
+        # await ws.wait_closed()
+
+
+async def send_heartbeat_to_ocpp(url):
+    async with websockets.connect(
+            # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
+            url,
+            subprotocols=['ocpp1.6']
+    ) as ws:
+        cp = ChargePoint('CP_1', ws)
+
+        await asyncio.gather(cp.send_heart_beat())
+        # await ws.wait_closed()
+
+
+async def start_transaction_ocpp(url):
+    async with websockets.connect(
+            # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
+            url,
+            subprotocols=['ocpp1.6']
+    ) as ws:
+        cp = ChargePoint('CP_1', ws)
+
+        await asyncio.gather(cp.start_transaction())
+        # await ws.wait_closed()
+
+
+async def send_meter_values_to_ocpp(meter_value_charged, url):
+    async with websockets.connect(
+            # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
+            url,
+            subprotocols=['ocpp1.6']
+    ) as ws:
+        cp = ChargePoint('CP_1', ws)
+
+        await asyncio.gather(cp.get_meter(meter_value_charged))
+        # await ws.wait_closed()
+
+
+async def stop_transaction_ocpp(url):
+    async with websockets.connect(
+            # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
+            url,
+            subprotocols=['ocpp1.6']
+    ) as ws:
+        cp = ChargePoint('CP_1', ws)
+
+        await asyncio.gather(cp.stop_transaction())
+        # await ws.wait_closed()
+        ws.close()
