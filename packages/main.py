@@ -72,7 +72,9 @@ class HandlerAlgorithm:
                             for cp in data.data.cp_data.values():
                                 OCPPClient.ocpp_test(cp)
                         if OCPPClient.state_occp_client_run():
-                            OCPPClient.ocpp_heartbeat()
+                            for cp in data.data.cp_data.values():
+                            #OCPPClient.ocpp_heartbeat()
+                                OCPPClient.ocpp_test(cp)
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
@@ -200,6 +202,7 @@ try:
     prep = prepare.Prepare()
     general_internal_chargepoint_handler = GeneralInternalChargepointHandler()
     rfid = RfidReader()
+    ocpp = OCPPClient()
     event_ev_template = threading.Event()
     event_ev_template.set()
     event_charge_template = threading.Event()
@@ -249,6 +252,10 @@ try:
     if rfid.keyboards_detected:
         t_rfid = Thread(target=rfid.run, args=(), name="Internal Chargepoint")
         t_rfid.start()
+
+    if OCPPClient.state_occp_client_run:
+        t_ocpp = Thread(target=ocpp.run, args=(), name="OCPP Client")
+        t_ocpp.start()
 
     t_sub.start()
     t_set.start()
