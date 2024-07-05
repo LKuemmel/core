@@ -690,6 +690,11 @@ class Chargepoint(ChargepointRfidMixin):
                     (self.data.get.plug_state is False and self.data.set.plug_state_prev)):
                 Pub().pub(f"openWB/set/vehicle/{self.data.config.ev}/get/force_soc_update", True)
                 log.debug("SoC nach Anstecken")
+                if self.data.config.ocpp_token and data.data.optional_data.ocpp_module:
+                    if self.data.get.plug_state:
+                        data.data.optional_data.ocpp_module.start_transaction(self.num, self.data.set.rfid)
+                    else:
+                        data.data.optional_data.ocpp_module.stop_transaction(self.num, self.data.set.rfid)
             if message is not None and self.data.get.state_str is None:
                 self.set_state_and_log(message)
         except Exception:

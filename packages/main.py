@@ -68,13 +68,6 @@ class HandlerAlgorithm:
                         control.calc_current()
                         proc.process_algorithm_results()
                         data.data.graph_data.pub_graph_data()
-                        if OCPPClient.state_occp_client_start() and not OCPPClient.state_occp_client_run():
-                            for cp in data.data.cp_data.values():
-                                OCPPClient.ocpp_test(cp)
-                        if OCPPClient.state_occp_client_run():
-                            for cp in data.data.cp_data.values():
-                            #OCPPClient.ocpp_heartbeat()
-                                OCPPClient.ocpp_test(cp)
                     self.interval_counter = 1
                 else:
                     self.interval_counter = self.interval_counter + 1
@@ -99,6 +92,8 @@ class HandlerAlgorithm:
                 data.data.general_data.grid_protection()
                 data.data.optional_data.et_get_prices()
                 data.data.counter_all_data.validate_hierarchy()
+                if data.data.optional_data.ocpp_module:
+                    data.data.optional_data.ocpp_module.send_meter_values()
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:
@@ -133,9 +128,6 @@ class HandlerAlgorithm:
                     general_internal_chargepoint_handler.internal_chargepoint_handler.heartbeat = False
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 sub.system_data["system"].update_ip_address()
-                if OCPPClient.state_occp_client_run():
-                    for cp in data.data.cp_data.values():
-                        OCPPClient.ocpp_send_meter_values(cp)
         except KeyboardInterrupt:
             log.critical("Ausführung durch exit_after gestoppt: "+traceback.format_exc())
         except Exception:

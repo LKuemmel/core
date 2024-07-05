@@ -33,6 +33,8 @@ class Prepare:
             data.data.cp_all_data.get_cp_sum()
             data.data.cp_all_data.no_charge()
             data.data.counter_all_data.set_home_consumption()
+            if data.data.optional_data.ocpp_module:
+                data.data.optional_data.ocpp_module.send_heartbeat()
         except Exception:
             log.exception("Fehler im Prepare-Modul")
         data.data.print_all()

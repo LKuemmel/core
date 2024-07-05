@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
+from dataclasses import dataclass
 from ocpp.v201.enums import RegistrationStatusType
 import websockets
 from ocpp.v16 import call
@@ -94,7 +95,7 @@ class OCPPClient(ChargePoint):
 
     globvar_url: str
 
-    def __init__(self) -> None:
+    def __init__(self, config) -> None:
         try:
             pass
         except Exception:
@@ -126,21 +127,6 @@ class OCPPClient(ChargePoint):
         except Exception:
             log.exception("Fehler im OCPP-Modul")
 
-    def get_ocpp_config():
-        return {
-            "data": {
-                "url": "",
-            },
-        }
-
-    def get_config(occp_config):
-        global globvar_url
-        globvar_url = occp_config["data"]["url"]
-
-    def get_url():
-        global globvar_url
-        return globvar_url
-
     def ocpp_test(cp):
         # Hier muss cp data übergeben werden an thread architektur und diese schiebt die anfragen raus
         # url = OCPPClient.get_url()
@@ -167,27 +153,16 @@ class OCPPClient(ChargePoint):
         else:
             log.debug("Neither plugging nor charging")
 
-    def state_occp_client_start():
-        global globvar_occp_client_start
-        return globvar_occp_client_start
-
-    def state_occp_client_run():
-        global globvar_occp_client_run
-        return globvar_occp_client_run
-
-    def start_ocpp():
-        global globvar_occp_client_start
-        globvar_occp_client_start = True
-        print(globvar_occp_client_start)
-
-    def stop_ocpp():
-        global globvar_occp_client_run
-        globvar_occp_client_run = False
-        print(globvar_occp_client_run)
-
     def run(self):
         global loop
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         asyncio.ensure_future(self._keep_connection())
         loop.run_forever()
+
+
+@dataclass
+class OcppConfig:
+    url: str
+    username: str
+    active: bool = True

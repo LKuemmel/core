@@ -146,6 +146,7 @@ class Config:
     auto_phase_switch_hw: bool = False
     control_pilot_interruption_hw: bool = False
     id: int = 0
+    ocpp_token: str = None
 
     def __post_init__(self):
         self.event_update_state: threading.Event

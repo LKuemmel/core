@@ -651,6 +651,13 @@ class SubData:
                             config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
                             var.et_module = mod.create_electricity_tariff(config)
                             var.et_get_prices()
+                    elif re.search("/optional/ocpp/provider$", msg.topic) is not None:
+                        config_dict = decode_payload(msg.payload)
+                        if config_dict["active"] is False:
+                            var.et_module = None
+                        else:
+                            # immer wenn es eine neue Konfig gibt, wird neu  initialisiert, damit zb bei einem neun Backend alle Daten dorthin geschickt werden.
+                            var.ocpp_module = OCPPClient(config)
                     else:
                         self.set_json_payload_class(var.data.et, msg)
                 else:

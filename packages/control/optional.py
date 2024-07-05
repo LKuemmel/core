@@ -81,6 +81,7 @@ class Optional:
         try:
             self.data = OptionalData()
             self.et_module: ConfigurableElectricityTariff = None
+            self.ocpp_module: OCPPClient = None
         except Exception:
             log.exception("Fehler im Optional-Modul")
 
