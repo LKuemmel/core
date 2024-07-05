@@ -17,23 +17,6 @@ globvar_occp_client_run = False
 chargepoint_lst = []
 
 
-def on_message(ws, message):
-    print(f"Received message: {message}")
-
-
-def on_error(ws, error):
-    print(f"Encountered error: {error}")
-
-
-def on_close(ws, close_status_code, close_msg):
-    print("Connection closed")
-
-
-def on_open(ws):
-    print("Connection opened")
-    ws.send("Hello, Server!")
-
-
 class ChargePoint(cp):
 
     async def send_boot_notification(self):
@@ -107,7 +90,7 @@ class ChargePoint(cp):
 
 
 class OCPPClient(ChargePoint):
-    _detect_chargepoints: list[ChargePoint] = []
+    _detected_chargepoints: list[ChargePoint] = []
 
     globvar_url: str
 
@@ -117,21 +100,29 @@ class OCPPClient(ChargePoint):
         except Exception:
             log.exception("Fehler im OCPP-Modul")
 
-    async def _keep_connection(chargepoint_lst):
+    async def _keep_connection(meter_value_charged):
         try:
+            # async for event in ChargePoint.async_read_loop():
+            #    if event.type == "test"
             if globvar_occp_client_run is False:
                 async with websockets.connect(
                     'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
                     # url,
                     subprotocols=['ocpp1.6']
                 ) as ws:
+                    global cp
                     cp = ChargePoint('CP_1', ws)
+                    print(type(cp))
                     await asyncio.gather(cp.start(), cp.send_boot_notification())
 
             if globvar_occp_client_run:
-                for x in chargepoint_lst:
-                    asyncio.gather(cp.get_meter(x))
-            # await ws.wait_closed()
+                try:
+                    # for x in chargepoint_lst:
+                    # await asyncio.gather(cp.get_meter(x))
+                    await asyncio.gather(cp.get_meter(meter_value_charged))
+                # await ws.wait_closed()
+                except Exception as e:
+                    print(e)
         except Exception:
             log.exception("Fehler im OCPP-Modul")
 
@@ -152,31 +143,26 @@ class OCPPClient(ChargePoint):
 
     def ocpp_test(cp):
         # Hier muss cp data übergeben werden an thread architektur und diese schiebt die anfragen raus
-        url = OCPPClient.get_url()
+        # url = OCPPClient.get_url()
         global chargepoint_lst
+        print(cp.num)
         if cp.data.get.charge_state:
             meter_value_charged = cp.data.get.imported
             chargepoint_name = cp.data.config.name
             print(chargepoint_name, meter_value_charged)
+            # chargepoint_lst.append(cp.num)
             # chargepoint_lst.append(chargepoint_name)
             chargepoint_lst.append(meter_value_charged)
             print(chargepoint_lst)
-            # threads = [threading.Thread(target=send_meter_values_to_ocpp, args=(url, meter_value_charged,))
-            #           for meter_value_charged in chargepoint_lst]
-            # for thread in threads:
-            #    thread.start()
-            # for thread in threads:
-            #    thread.join()
-            # url = OCPPClient.get_url()
-            # print(url)
             global globvar_occp_client_run
             globvar_occp_client_run = True
             try:
                 pass
-                # asyncio.OCPPClient._keep_connection(chargepoint_lst)
+                # asyncio.run(OCPPClient._keep_connection(chargepoint_lst))
+                # asyncio.get_event_loop().run_until_complete(OCPPClient._keep_connection(meter_value_charged))
+                asyncio.run_coroutine_threadsafe(OCPPClient._keep_connection(meter_value_charged), loop)
             except Exception as e:
                 print(e)
-            # asyncio.run(send_meter_values_to_ocpp(url, meter_value_charged))
             log.debug("Send Meter Values to OCPP")
         else:
             log.debug("Neither plugging nor charging")
@@ -200,70 +186,8 @@ class OCPPClient(ChargePoint):
         print(globvar_occp_client_run)
 
     def run(self):
+        global loop
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        asyncio.ensure_future(self._keep_connection(chargepoint_lst))
+        asyncio.ensure_future(self._keep_connection())
         loop.run_forever()
-
-
-async def connect_to_ocpp(url):
-    async with websockets.connect(
-            # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
-            url,
-            subprotocols=['ocpp1.6']
-    ) as ws:
-        cp = ChargePoint('CP_1', ws)
-
-        await asyncio.gather(cp.start(), cp.send_boot_notification())
-    # time.sleep(30)
-    # return await asyncio.Event().wait(True)
-    # await ws.wait_closed()
-
-
-async def send_heartbeat_to_ocpp(url):
-    async with websockets.connect(
-            # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
-            url,
-            subprotocols=['ocpp1.6']
-    ) as ws:
-        cp = ChargePoint('CP_1', ws)
-
-        await asyncio.gather(cp.send_heart_beat())
-        # await ws.wait_closed()
-
-
-async def start_transaction_ocpp(url):
-    async with websockets.connect(
-            # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
-            url,
-            subprotocols=['ocpp1.6']
-    ) as ws:
-        cp = ChargePoint('CP_1', ws)
-
-        await asyncio.gather(cp.start_transaction())
-        # await ws.wait_closed()
-
-
-async def send_meter_values_to_ocpp(url, meter_value_charged):
-    async with websockets.connect(
-            # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
-            url,
-            subprotocols=['ocpp1.6']
-    ) as ws:
-        cp = ChargePoint('CP_1', ws)
-
-        asyncio.gather(cp.get_meter(meter_value_charged))
-        # await ws.wait_closed()
-
-
-async def stop_transaction_ocpp(url):
-    async with websockets.connect(
-            # 'ws://128.140.100.76:8080/steve/websocket/CentralSystemService/simtest1',
-            url,
-            subprotocols=['ocpp1.6']
-    ) as ws:
-        cp = ChargePoint('CP_1', ws)
-
-        await asyncio.gather(cp.stop_transaction())
-        # await ws.wait_closed()
-        ws.close()
