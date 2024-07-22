@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Generic, TypeVar
+from typing import Generic, Optional, TypeVar
 
 from control.chargepoint.charging_type import ChargingType
 
@@ -36,6 +36,10 @@ class AbstractChargepoint:
     @abstractmethod
     def subtract_conversion_loss_from_current(self, current: float) -> float:
         return current
+
+    @abstractmethod
+    def get_max_power_dynamic_loadsharing(self) -> Optional[float]:
+        return None
 
 
 T = TypeVar("T")

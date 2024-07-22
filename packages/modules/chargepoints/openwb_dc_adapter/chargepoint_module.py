@@ -47,6 +47,8 @@ class ChargepointModule(AbstractChargepoint):
             raise Exception(
                 "DC-Laden muss durch den Support freigeschaltet werden. Bitte nehme Kontakt mit dem Support auf.")
         self.efficiency = None
+        self.plug_state = False
+        self.partner_plug_state_since_self_plugged = False
 
         with SingleComponentUpdateContext(self.fault_state, False):
             with self.__client_error_context:
@@ -82,6 +84,7 @@ class ChargepointModule(AbstractChargepoint):
                 elif json_rsp["fault_state"] == 2:
                     raise Exception(json_rsp["fault_str"])
 
+                self.plug_state = json_rsp["plug_state"]
                 charging_power = json_rsp["charging_power"]
                 imported, exported = self.sim_counter.sim_count(charging_power)
                 chargepoint_state = ChargepointState(
@@ -95,7 +98,7 @@ class ChargepointModule(AbstractChargepoint):
                     phases_in_use=3,
                     power=json_rsp["power_all"],
                     powers=json_rsp["powers"],
-                    plug_state=json_rsp["plug_state"],
+                    plug_state=self.plug_state,
                     rfid=json_rsp["rfid_tag"],
                     soc=json_rsp["soc_value"],
                     soc_timestamp=json_rsp["soc_timestamp"],
@@ -120,6 +123,25 @@ class ChargepointModule(AbstractChargepoint):
                     raise Exception(f"Ladepunkt nicht verfügbar. Status: {ChargingStatus(json_rsp['state'])}")
                 self.store.set(chargepoint_state)
                 self.__client_error_context.reset_error_counter()
+
+    def get_max_power_dynamic_loadsharing(self) -> float:
+        """Wenn ein Fahrzeug lädt, kann der Lader 150 kW. Kommt ein zweites dazu, können beide nur noch mit 75 kW
+        laden. Fährt eines der beiden Fahrzeuge weg, kann das verbleibende weiterhin nur mit 75 kW laden. Erst
+        wenn beide Abgesteckt wurden und eines neu angesteckt wird, stehen wieder 150 kW zu Verfügung."""
+        partner_plug_state = self.__session.get(
+            f'http://{self.config.configuration.ip_address}/connect.php').json()["plug_state"]
+        if partner_plug_state and self.plug_state:
+            self.partner_plug_state_since_self_plugged = True
+            return self.config.configuration.station.load_sharing_shared
+        elif partner_plug_state or self.plug_state:
+            if self.partner_plug_state_since_self_plugged is False:
+                return self.config.configuration.station.load_sharing_max
+            elif self.partner_plug_state_since_self_plugged:
+                return self.config.configuration.station.load_sharing_shared
+        else:
+            self.partner_plug_state_since_self_plugged = False
+            return self.config.configuration.station.load_sharing_max
+
     # # Test mit pro
     # def set_current(self, current: float) -> None:
     #     if self.__client_error_context.error_counter_exceeded():

@@ -635,9 +635,13 @@ class Chargepoint(ChargepointRfidMixin):
             vehicle = -1
             self._pub_configured_ev(ev_list)
 
+    def _set_dynamic_loadsharing(self):
+        self.data.set.max_power_dynamic_loadsharing = self.chargepoint_module.get_max_power_dynamic_loadsharing()
+
     def update(self, ev_list: Dict[str, Ev]) -> None:
         try:
             vehicle, message = self.prepare_cp()
+            self._set_dynamic_loadsharing()
             if vehicle != -1:
                 try:
                     charging_ev = self._get_charging_ev(vehicle, ev_list)

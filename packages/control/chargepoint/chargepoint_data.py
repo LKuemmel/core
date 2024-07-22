@@ -128,6 +128,7 @@ class Set:
     charging_ev: int = -1
     charging_ev_prev: int = -1
     current: float = 0
+    max_power_dynamic_loadsharing: Optional[float] = None
     energy_to_charge: float = 0
     loadmanagement_available: bool = True
     log: Log = field(default_factory=log_factory)

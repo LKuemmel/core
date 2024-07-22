@@ -14,6 +14,7 @@ class Loadmanagement:
     def get_available_currents(self,
                                missing_currents: List[float],
                                counter: Counter,
+                               max_power_dynamic_loadsharing: Optional[float],
                                feed_in: int = 0) -> Tuple[List[float], Optional[LimitingValue]]:
         raw_currents_left = counter.data.set.raw_currents_left
         available_currents, limit = self._limit_by_current(missing_currents, raw_currents_left)
@@ -26,11 +27,16 @@ class Loadmanagement:
                 counter, available_currents, raw_currents_left)
             if limit_unbalanced_load is not None:
                 limit = limit_unbalanced_load
+        available_currents, limit_dynamic_loadsharing = self._limit_by_dynamic_loadsharing(
+            counter, available_currents, max_power_dynamic_loadsharing)
+        if limit_dynamic_loadsharing is not None:
+            limit = limit_dynamic_loadsharing
         return available_currents, limit
 
     def get_available_currents_surplus(self,
                                        missing_currents: List[float],
                                        counter: Counter,
+                                       max_power_dynamic_loadsharing: Optional[float],
                                        feed_in: int = 0) -> Tuple[List[float], Optional[LimitingValue]]:
         raw_currents_left = counter.data.set.raw_currents_left
         available_currents, limit = self._limit_by_current(missing_currents, raw_currents_left)
@@ -43,6 +49,10 @@ class Loadmanagement:
                 counter, available_currents, raw_currents_left)
             if limit_unbalanced_load is not None:
                 limit = limit_unbalanced_load
+        available_currents, limit_dynamic_loadsharing = self._limit_by_dynamic_loadsharing(
+            counter, available_currents, max_power_dynamic_loadsharing)
+        if limit_dynamic_loadsharing is not None:
+            limit = limit_dynamic_loadsharing
         return available_currents, limit
 
     def _limit_by_unbalanced_load(self,
@@ -89,3 +99,21 @@ class Loadmanagement:
             log.debug(f"Stromüberschreitung {missing_currents}W korrigieren: {available_currents}")
             limit = LimitingValue.CURRENT
         return available_currents, limit
+
+    def _limit_by_dynamic_loadsharing(self,
+                                      available_currents: List[float],
+                                      max_power_dynamic_loadsharing: Optional[float]
+                                      ) -> Tuple[List[float], Optional[LimitingValue]]:
+        currents = available_currents.copy()
+        limit = None
+        if max_power_dynamic_loadsharing:
+            log.debug("Verbleibende Leistung unter Berücksichtigung der dynamischen Lastverteilung: "
+                      f"{max_power_dynamic_loadsharing}W")
+            if sum(available_currents)*230 > max_power_dynamic_loadsharing:
+                for i in range(0, 3):
+                    # Am meisten belastete Phase trägt am meisten zur Leistungsreduktion bei.
+                    currents[i] = available_currents[i] / sum(available_currents) * max_power_dynamic_loadsharing / 230
+                log.debug(
+                    f"Leistungsüberschreitung auf {max_power_dynamic_loadsharing}W korrigieren: {available_currents}")
+                limit = LimitingValue.POWER
+        return currents, limit
