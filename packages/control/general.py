@@ -12,8 +12,8 @@ from dataclass_utils.factories import empty_list_factory
 from helpermodules.constants import NO_ERROR
 from helpermodules import timecheck
 from modules.common.configurable_io import ConfigurableIo
-from modules.ripple_control_receivers.gpio.config import GpioRcr
-from modules.ripple_control_receivers.gpio.ripple_control_receiver import create_ripple_control_receiver
+from modules.io.devices.gpio.config import GpioRcr
+from modules.io.devices.gpio.ripple_control_receiver import create_ripple_control_receiver
 
 log = logging.getLogger(__name__)
 
@@ -193,7 +193,7 @@ class General:
 
     def __init__(self):
         self.data: GeneralData = GeneralData()
-        self.ripple_control_receiver: ConfigurableRcr = None
+        self.ripple_control_receiver: ConfigurableIo = None
 
     def get_phases_chargemode(self, chargemode: str, submode: str) -> Optional[int]:
         """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.

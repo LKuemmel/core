@@ -29,7 +29,7 @@ from helpermodules.timecheck import convert_timedelta_to_time_string, get_differ
 from helpermodules.utils import thread_handler
 from helpermodules.pub import Pub
 from helpermodules.utils.json_file_handler import write_and_check
-from modules.ripple_control_receivers.gpio.config import GpioRcr
+from modules.io.devices.gpio.config import GpioRcr
 import re
 
 log = logging.getLogger("data_migration")

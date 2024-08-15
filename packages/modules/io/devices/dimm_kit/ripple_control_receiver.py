@@ -22,10 +22,14 @@ VALID_VERSIONS = ["openWB DimmModul"]
 
 def create_io(config: IoLan):
     def updater():
-        input_1 = State(client.read_coils(0x0000, 1, unit=config.configuration.modbus_id))
-        input_2 = State(client.read_coils(0x0001, 1, unit=config.configuration.modbus_id))
-        [getattr(actions, config.actions[f"input_{i}"]["action"])(getattr(__name__, f"input_{i}"),
-                                                                  config.actions[f"input_{i}"]["action_parameters"]) for i in range(1, 11)]
+        inputs = {
+            "input_1": State(client.read_coils(0x0000, 1, unit=config.configuration.modbus_id)),
+            "input_2": State(client.read_coils(0x0001, 1, unit=config.configuration.modbus_id))
+        }
+
+        [getattr(actions, config.actions[f"input_{i}"]["action"])(
+            inputs[f"input_{i}"],
+            config.actions[f"input_{i}"]["action_parameters"]) for i in range(1, 3)]
     version = False
     client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
     try:

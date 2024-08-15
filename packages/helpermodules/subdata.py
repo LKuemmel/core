@@ -32,7 +32,7 @@ from control import pv
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
-from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
+from modules.common.configurable_io import ConfigurableIo
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
@@ -581,8 +581,8 @@ class SubData:
                                                       config_dict["type"]+".ripple_control_receiver", "modules")
                         config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
                         var.data.ripple_control_receiver.module = config_dict
-                        var.ripple_control_receiver = ConfigurableRcr(
-                            config=config, component_initialiser=mod.create_ripple_control_receiver)
+                        var.ripple_control_receiver = ConfigurableIo(
+                            config=config, component_updater=mod.create_ripple_control_receiver)
                 elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
                 elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:

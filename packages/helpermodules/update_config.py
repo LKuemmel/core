@@ -32,7 +32,7 @@ from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
 from modules.devices.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
-from modules.ripple_control_receivers.gpio.config import GpioRcr
+from modules.io.devices.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
 from modules.devices.good_we.version import GoodWeVersion
 

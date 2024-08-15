@@ -15,4 +15,4 @@ def ripple_control_receiver(input_state: bool) -> None:
 
 CONTROLLABLE_CONSUMERS_ACTIONS = [{"action": "dimming", "action_parameters": []},
                                   {"action": "ripple_control_receiver", "action_parameters": []},
-                                  {"action": "dimming_via_direct_control", "action_parameters": ["cp_num"]},]
+                                  {"action": "dimming_via_direct_control", "action_parameters": ["cp_num"]}, ]
