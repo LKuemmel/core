@@ -13,6 +13,6 @@ def ripple_control_receiver(input_state: bool) -> None:
     Pub().pub("openWB/set/general/ripple_control_receiver/get/active", input_state)
 
 
-CONTROLLABLE_CONSUMERS_ACTIONS = [{"action": "dimming", "action_parameters": []},
+CONTROLLABLE_CONSUMERS_ACTIONS = [{"action": "dimming", "action_parameters": ["cp_num", "max_import_power"]},
                                   {"action": "ripple_control_receiver", "action_parameters": []},
                                   {"action": "dimming_via_direct_control", "action_parameters": ["cp_num"]}, ]
