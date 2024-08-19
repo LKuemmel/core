@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from modules.io.devices.dimm_kit.config import IoLan
-from modules.io import actions
 from modules.common.version_by_telnet import get_version_by_telnet
 from modules.common.modbus import ModbusTcpClient_
 from enum import Enum
@@ -22,14 +21,10 @@ VALID_VERSIONS = ["openWB DimmModul"]
 
 def create_io(config: IoLan):
     def updater():
-        inputs = {
-            "input_1": State(client.read_coils(0x0000, 1, unit=config.configuration.modbus_id)),
-            "input_2": State(client.read_coils(0x0001, 1, unit=config.configuration.modbus_id))
-        }
+        return {0: State(client.read_coils(0x0000, 1, unit=config.configuration.modbus_id)),
+                1: State(client.read_coils(0x0001, 1, unit=config.configuration.modbus_id))
+                }
 
-        [getattr(actions, config.actions[f"input_{i}"]["action"])(
-            inputs[f"input_{i}"],
-            config.actions[f"input_{i}"]["action_parameters"]) for i in range(1, 3)]
     version = False
     client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
     try:

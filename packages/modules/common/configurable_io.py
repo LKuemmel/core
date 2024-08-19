@@ -1,5 +1,6 @@
 from typing import TypeVar, Generic, Callable
 
+from modules.common import store
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.component_type import ComponentType
 from modules.common.fault_state import ComponentInfo, FaultState
@@ -15,6 +16,7 @@ class ConfigurableIo(Generic[T_IO_CONFIG]):
         self.config = config
         self.fault_state = FaultState(ComponentInfo(None, self.config.name,
                                       ComponentType.IO.value))
+        self.store = store.get_io_value_store()
         with SingleComponentUpdateContext(self.fault_state):
             self.__component_updater = component_updater
 
@@ -22,7 +24,7 @@ class ConfigurableIo(Generic[T_IO_CONFIG]):
         if hasattr(self, "_component_updater"):
             # Wenn beim Initialisieren etwas schief gelaufen ist, ursprüngliche Fehlermeldung beibehalten
             with SingleComponentUpdateContext(self.fault_state):
-                self.__component_updater()
+                self.store(self.__component_updater())
 
 
 {"name": "Dimm-Kit", "type": "dimm_kit", "configuration": {"ip_address": "192.168.1.98",

@@ -9,7 +9,7 @@ import re
 import subprocess
 import paho.mqtt.client as mqtt
 
-from control import bat_all, bat, pv_all
+from control import bat_all, bat, io_device, pv_all
 from control.chargepoint import chargepoint
 from control import counter
 from control import counter_all
@@ -67,6 +67,7 @@ class SubData:
         "cp1": InternalChargepoint(),
         "global_data": GlobalHandlerData(),
         "rfid_data": RfidData()}
+    io_data: Dict[str, io_device.IoDevice] = {}
     optional_data = optional.Optional()
     system_data = {"system": system.System()}
     graph_data = graph.Graph()
@@ -883,6 +884,34 @@ class SubData:
         else:
             internal_configured = False
         self.internal_chargepoint_data["global_data"].configured = internal_configured
+
+    def process_io_topic(self, var: Dict[str, io_device.IoDevice], msg: mqtt.MQTTMessage):
+        """ Handler für die Graph-Topics
+
+        Parameter
+        ----------
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
+            enthält Topic und Payload
+        """
+        try:
+            if re.search("/io/module/[0-9]+/", msg.topic) is not None:
+                index = get_index(msg.topic)
+                payload = decode_payload(msg.payload)
+                if payload == "":
+                    if "io"+index in var:
+                        var.pop("io"+index)
+                else:
+                    if "io"+index not in var:
+                        var["io"+index] = io_device.IoDevice(int(index), payload)
+                if re.search("/io/module/[0-9]+/config", msg.topic) is not None:
+                    self.set_json_payload_class(var.data.config, msg)
+                    mod = importlib.import_module(".io."+payload["type"]+".api", "modules")
+                    config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
+                    var["io"+index].module = mod.create_io(config)
+        except Exception:
+            log.exception("Fehler im subdata-Modul")
 
     def process_legacy_smarthome_topic(self, client: mqtt.Client, var: counter_all.CounterAll, msg: mqtt.MQTTMessage):
         """ Handler für die SmartHome-Topics des alten

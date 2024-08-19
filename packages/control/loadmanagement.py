@@ -119,12 +119,15 @@ class Loadmanagement:
                           surplus: bool,
                           counter: Counter,
                           cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
+        for io in data.data.io_data.values():
+            dimming_power_left = io.dimming_get_import_power_left(cp.num)
+            if dimming_power_left is not None:
+                break
         if (counter.data.set.dimming_power_left is not None and
-                surplus is False and
-                cp in data.data.general_data.data.dimming.set.devices):
-            if sum(available_currents)*230 > counter.data.set.dimming_power_left:
+                surplus is False):
+            if sum(available_currents)*230 > dimming_power_left:
                 phases = 3-available_currents.count(0)
-                overload_per_phase = (sum(available_currents) - counter.data.set.dimming_power_left/230)/phases
+                overload_per_phase = (sum(available_currents) - dimming_power_left/230)/phases
                 available_currents = [c - overload_per_phase if c > 0 else 0 for c in available_currents]
                 return available_currents, LimitingValue.DIMMING.value
         return available_currents, None

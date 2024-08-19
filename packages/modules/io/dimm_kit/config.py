@@ -1,6 +1,6 @@
 from typing import Optional
 
-from modules.io.actions.controllable_consumers import CONTROLLABLE_CONSUMERS_ACTIONS
+from control.io_device import CONTROLLABLE_CONSUMERS_ACTIONS
 
 
 class IoLanRcrConfiguration:
@@ -18,4 +18,4 @@ class IoLan:
         self.name = name
         self.type = type
         self.configuration = configuration or IoLanRcrConfiguration()
-        self.actions = {f"input_{i}": CONTROLLABLE_CONSUMERS_ACTIONS for i in range(1, 11)}
+        self.actions = {i: CONTROLLABLE_CONSUMERS_ACTIONS for i in range(1, 11)}

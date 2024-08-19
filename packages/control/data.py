@@ -7,6 +7,7 @@ import logging
 import threading
 from functools import wraps
 from typing import Dict
+from control import io_device
 from control.bat import Bat
 from control.bat_all import BatAll
 from control.chargepoint.chargepoint import Chargepoint
@@ -38,6 +39,7 @@ ev_charge_template_data_lock = threading.Lock()
 ev_data_lock = threading.Lock()
 ev_template_data_lock = threading.Lock()
 general_data_lock = threading.Lock()
+io_data_lock = threading.Lock()
 optional_data_lock = threading.Lock()
 pv_data_lock = threading.Lock()
 pv_all_data_lock = threading.Lock()
@@ -73,6 +75,7 @@ class Data:
         self._ev_template_data: Dict[str, EvTemplate] = {}
         self._general_data = General()
         self._graph_data = Graph()
+        self._io_data: Dict[str, io_device.IoDevice] = {}
         self._optional_data = Optional()
         self._pv_data: Dict[str, Pv] = {}
         self._pv_all_data = PvAll()
@@ -196,6 +199,15 @@ class Data:
         self._general_data = value
 
     @property
+    def io_data(self) -> Dict[str, io_device.IoDevice]:
+        return self._io_data
+
+    @io_data.setter
+    @locked(io_data_lock)
+    def io_data(self, value):
+        self._io_data = value
+
+    @property
     def optional_data(self) -> Optional:
         return self._optional_data
 
@@ -245,6 +257,7 @@ class Data:
         log.info(f"general_data\n{self._general_data.data}")
         log.info(f"general_data-display\n{self._general_data.data.extern_display_mode}")
         log.info(f"graph_data\n{self._graph_data.data}")
+        self._print_dictionaries(self._io_data)
         log.info(f"optional_data\n{self._optional_data.data}")
         self._print_dictionaries(self._pv_data)
         log.info(f"pv_all_data\n{self._pv_all_data.data}")
@@ -392,6 +405,7 @@ class Data:
         with ModuleDataReceivedContext(self.event_module_update_completed):
             try:
                 self.general_data = copy.deepcopy(SubData.general_data)
+                self.io_data = copy.deepcopy(SubData.io_data)
                 self.optional_data = copy.deepcopy(SubData.optional_data)
                 self.__copy_ev_data()
                 self.__copy_cp_data()
