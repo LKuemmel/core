@@ -53,7 +53,8 @@ class Command:
                ("chargepoint_template", "chargepoint/template", 0),
                ("device", "system/device", -1),
                ("ev_template", "vehicle/template/ev_template", 0),
-               ("vehicle", "vehicle", 0)]
+               ("vehicle", "vehicle", 0),
+               ("io", "io", 0),]
 
     def __init__(self, event_command_completed: threading.Event):
         try:
@@ -157,6 +158,34 @@ class Command:
         if self.max_id_device >= payload["data"]["id"]:
             ProcessBrokerBranch(f'system/device/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(payload, connection_id, f'Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
+                             MessageType.SUCCESS)
+        else:
+            pub_user_message(
+                payload, connection_id,
+                f'Die ID \'{payload["data"]["id"]}\' ist größer als die maximal vergebene ID \'{self.max_id_device}\'.',
+                MessageType.ERROR)
+
+    def addIo(self, connection_id: str, payload: dict) -> None:
+        """ sendet das Topic, zu dem ein neues Io-Device erstellt werden soll.
+        """
+        new_id = self.max_id_io + 1
+        dev = importlib.import_module(".io."+payload["data"]["type"]+".api", "modules")
+        device_default = dataclass_utils.asdict(dev.device_descriptor.configuration_factory())
+        device_default["id"] = new_id
+        Pub().pub(f'openWB/set/system/io/{new_id}/config', device_default)
+        self.max_id_io = self.max_id_io + 1
+        Pub().pub("openWB/set/command/max_id/io", self.max_id_io)
+        pub_user_message(
+            payload, connection_id,
+            f'Neues IO-Gerät vom Typ \'{payload["data"]["type"]}\' mit ID \'{new_id}\' hinzugefügt.',
+            MessageType.SUCCESS)
+
+    def removeIo(self, connection_id: str, payload: dict) -> None:
+        """ löscht ein Io-Device.
+        """
+        if self.max_id_io >= payload["data"]["id"]:
+            ProcessBrokerBranch(f'system/io/{payload["data"]["id"]}/').remove_topics()
+            pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:
             pub_user_message(

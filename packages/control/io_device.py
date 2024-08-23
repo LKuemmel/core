@@ -4,6 +4,10 @@ from dataclass_utils._dataclass_from_dict import dataclass_from_dict
 from dataclass_utils.factories import empty_dict_factory
 from helpermodules.pub import Pub
 
+CONTROLLABLE_CONSUMERS_ACTIONS = [{"action": "Dimming", "action_parameters": ["cp_num", "max_import_power"]},
+                                  {"action": "ripple_control_receiver", "action_parameters": []},
+                                  {"action": "dimming_via_direct_control", "action_parameters": ["cp_num"]}, ]
+
 
 @dataclass
 class Dimming:
@@ -43,9 +47,6 @@ class IoData:
 
 
 class IoDevice:
-    CONTROLLABLE_CONSUMERS_ACTIONS = [{"action": "Dimming", "action_parameters": ["cp_num", "max_import_power"]},
-                                      {"action": "ripple_control_receiver", "action_parameters": []},
-                                      {"action": "dimming_via_direct_control", "action_parameters": ["cp_num"]}, ]
 
     def __init__(self, num: int, config: Dict):
         self.num = num

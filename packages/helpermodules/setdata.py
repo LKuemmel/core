@@ -84,6 +84,8 @@ class SetData:
                 self.process_bat_topic(msg)
             elif "openWB/set/general/" in msg.topic:
                 self.process_general_topic(msg)
+            elif "openWB/set/io/" in msg.topic:
+                self.process_io_topic(msg)
             elif "openWB/set/optional/" in msg.topic:
                 self.process_optional_topic(msg)
             elif "openWB/set/counter/" in msg.topic:
@@ -806,6 +808,25 @@ class SetData:
                   "openWB/set/general/ripple_control_receiver/module" in msg.topic):
                 self._validate_value(msg, "json")
             elif ("openWB/set/general/charge_log_data_config" in msg.topic):
+                self._validate_value(msg, "json")
+            else:
+                self.__unknown_topic(msg)
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
+    def process_io_topic(self, msg: mqtt.MQTTMessage):
+        """ Handler für die Allgemeinen-Topics
+
+         Parameters
+        ----------
+
+        msg:
+            enthält Topic und Payload
+        """
+        try:
+            if "config" in msg.topic:
+                self._validate_value(msg, "json")
+            elif "get/input" in msg.topic:
                 self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
