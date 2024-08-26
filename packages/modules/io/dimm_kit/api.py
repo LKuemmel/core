@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from modules.io.devices.dimm_kit.config import IoLan
+from modules.io.dimm_kit.config import IoLan
 from modules.common.version_by_telnet import get_version_by_telnet
 from modules.common.modbus import ModbusTcpClient_
 from enum import Enum

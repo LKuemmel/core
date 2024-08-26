@@ -424,10 +424,13 @@ class Ev:
             feed_in_yield = 0
         all_surplus = data.data.counter_all_data.get_evu_counter().get_usable_surplus(feed_in_yield)
         required_surplus = self.ev_template.data.min_current * max_phases_ev * 230 - get_power
+        unblanced_load_limit_reached = (
+            limit is not None and
+            re.search(re.escape(LimitingValue.UNBALANCED_LOAD.value).replace(r'\{\}', r'.+'), limit))
         condition_1_to_3 = (
             ((max(get_currents) > max_current and
               all_surplus > required_surplus) or
-             re.search(re.escape(LimitingValue.UNBALANCED_LOAD.value).replace(r'\{\}', r'.+'), limit)) and
+             unblanced_load_limit_reached) and
             phases_in_use == 1)
         condition_3_to_1 = max(get_currents) < min_current and all_surplus <= 0 and phases_in_use > 1
         if condition_1_to_3 or condition_3_to_1:

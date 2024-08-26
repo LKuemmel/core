@@ -8,12 +8,7 @@ from typing import List, Optional
 from control import data
 from control.bat_all import BatConsiderationMode
 from control.chargemode import Chargemode
-from dataclass_utils.factories import empty_list_factory
-from helpermodules.constants import NO_ERROR
 from helpermodules import timecheck
-from modules.common.configurable_io import ConfigurableIo
-from modules.io.devices.gpio.config import GpioRcr
-from modules.io.devices.gpio.ripple_control_receiver import create_ripple_control_receiver
 
 log = logging.getLogger(__name__)
 
@@ -112,45 +107,6 @@ def chargemode_config_factory() -> ChargemodeConfig:
 
 
 @dataclass
-class DimmingGet:
-    fault_state: int = field(default=0, metadata={
-                             "topic": "dimming/get/fault_state"})
-    fault_str: str = field(default=NO_ERROR, metadata={
-                           "topic": "dimming/get/fault_str"})
-    active: bool = field(default=False, metadata={
-        "topic": "dimming/get/override_value"})
-
-
-def dimming_get_factory() -> DimmingGet:
-    return DimmingGet()
-
-
-def gpio_rcr_factory() -> ConfigurableIo:
-    return create_ripple_control_receiver(GpioRcr())
-
-
-@dataclass
-class DimmingSet:
-    max_import_power: float = 0
-    devices: List[str] = field(default_factory=empty_list_factory)
-
-
-def dimming_set_factory() -> DimmingSet:
-    return DimmingSet()
-
-
-@dataclass
-class Dimming:
-    get: DimmingGet = field(default_factory=dimming_get_factory)
-    set: DimmingSet = field(default_factory=dimming_set_factory)
-    module: ConfigurableIo = field(default_factory=gpio_rcr_factory)
-
-
-def dimming_factory() -> Dimming:
-    return Dimming()
-
-
-@dataclass
 class Prices:
     bat: float = field(default=0.0002, metadata={"topic": "prices/bat"})
     cp: float = field(default=0, metadata={"topic": "prices/cp"})
@@ -184,7 +140,6 @@ class GeneralData:
     mqtt_bridge: bool = False
     prices: Prices = field(default_factory=prices_factory)
     range_unit: str = "km"
-    dimming: Dimming = field(default_factory=dimming_factory)
 
 
 class General:
@@ -193,7 +148,6 @@ class General:
 
     def __init__(self):
         self.data: GeneralData = GeneralData()
-        self.ripple_control_receiver: ConfigurableIo = None
 
     def get_phases_chargemode(self, chargemode: str, submode: str) -> Optional[int]:
         """ gibt die Anzahl Phasen zurück, mit denen im jeweiligen Lademodus geladen wird.

@@ -181,12 +181,13 @@ class Counter:
         else:
             self.data.set.dimming_power_left = None
 
-    def update_values_left(self, diffs) -> None:
+    def update_values_left(self, diffs, cp) -> None:
         self.data.set.raw_currents_left = list(map(operator.sub, self.data.set.raw_currents_left, diffs))
         if self.data.set.raw_power_left:
             self.data.set.raw_power_left -= sum(diffs) * 230
+        dimming_power_left = None
         for io in data.data.io_data.values():
-            dimming_power_left = io.dimming_set_import_power_left(cp.num, sum(diffs)*230)
+            dimming_power_left = io.dimming_set_import_power_left(sum(diffs)*230, cp.num)
         if dimming_power_left is not None:
             log.debug(f'Zähler {self.num}: {self.data.set.raw_currents_left}A verbleibende Ströme, '
                       f'{self.data.set.raw_power_left}W verbleibende Leistung, '
