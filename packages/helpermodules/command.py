@@ -54,7 +54,7 @@ class Command:
                ("device", "system/device", -1),
                ("ev_template", "vehicle/template/ev_template", 0),
                ("vehicle", "vehicle", 0),
-               ("io", "io", 0),]
+               ("io", "io", 0), ]
 
     def __init__(self, event_command_completed: threading.Event):
         try:

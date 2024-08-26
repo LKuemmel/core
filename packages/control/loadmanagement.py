@@ -119,6 +119,7 @@ class Loadmanagement:
                           surplus: bool,
                           counter: Counter,
                           cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
+        dimming_power_left = None
         for io in data.data.io_data.values():
             dimming_power_left = io.dimming_get_import_power_left(cp.num)
             if dimming_power_left is not None:
