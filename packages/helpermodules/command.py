@@ -172,8 +172,8 @@ class Command:
         dev = importlib.import_module(".io."+payload["data"]["type"]+".api", "modules")
         device_default = dataclass_utils.asdict(dev.device_descriptor.configuration_factory())
         device_default["id"] = new_id
-        Pub().pub(f'openWB/set/system/io/{new_id}/config', device_default)
-        self.max_id_io = self.max_id_io + 1
+        Pub().pub(f'openWB/set/io/{new_id}/config', device_default)
+        self.max_id_io = new_id
         Pub().pub("openWB/set/command/max_id/io", self.max_id_io)
         pub_user_message(
             payload, connection_id,
@@ -184,7 +184,7 @@ class Command:
         """ löscht ein Io-Device.
         """
         if self.max_id_io >= payload["data"]["id"]:
-            ProcessBrokerBranch(f'system/io/{payload["data"]["id"]}/').remove_topics()
+            ProcessBrokerBranch(f'io/{payload["data"]["id"]}/').remove_topics()
             pub_user_message(payload, connection_id, f'IO-Gerät mit ID \'{payload["data"]["id"]}\' gelöscht.',
                              MessageType.SUCCESS)
         else:

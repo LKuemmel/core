@@ -27,5 +27,8 @@ class ConfigurableIo(Generic[T_IO_CONFIG]):
                 self.store(self.__component_updater())
 
 
-{"name": "Dimm-Kit", "type": "dimm_kit", "configuration": {"ip_address": "192.168.1.98",
-                                                           "port": 8899, "modbus_id": 1}, "actions": {"input_1": {"action_parameters": {"cp": 2}, "action": "direct_control_cp"}}}
+# {"name": "Dimm-Kit", "type": "dimm_kit", "configuration": {"ip_address": "192.168.1.98",
+#                                                            "port": 8899, "modbus_id": 1}, "actions": {"input_1": {"action_parameters": {"cp": 2}, "action": "direct_control_cp"}}}
+# openWB/set/io/1/config
+# {"name": "openWB Dimm- & Control-Kit", "type": "dimm_kit", "configuration": {"ip_address": null, "port": 8899, "modbus_id": 1},
+#     "actions": {"1": {"action": "Dimming", "action_parameters": {"cp_num": [3, 4], "max_import_power": 4200}}}, "id": 1}

@@ -55,7 +55,7 @@ class IoDevice:
         self.module = None
 
     def parse_actions_to_dataclass(self, action_config: Dict):
-        for index, action in enumerate(action_config["input"]):
+        for index, action in enumerate(action_config):
             action_class = globals()[action["action"]]
             action_instance = dataclass_from_dict(action_class, action["action_parameters"])
             action_instance.input = index
