@@ -27,7 +27,8 @@ class ChargepointModule(AbstractChargepoint):
     # 1/3 des Regelintervalls für Abfrage der Werte, davon die Hälfte je Duo-LP
     CP1_DELAY = data.data.general_data.data.control_interval / 6
     CP1_DELAY_STARTUP = 4
-    ID_PHASE_SWITCH_UNIT = 3
+    ID_PHASE_SWITCH_UNIT_CP0 = 3
+    ID_PHASE_SWITCH_UNIT_CP1 = 4
 
     def __init__(self, config: OpenWBseries2Satellit) -> None:
         self.config = config
@@ -131,18 +132,18 @@ class ChargepointModule(AbstractChargepoint):
                     try:
                         with self._client.client:
                             self._client.check_hardware(self.fault_state)
-                            if phases_to_use == 1:
-                                self._client.client.delegate.write_register(
-                                    0x0001, 256, unit=self.ID_PHASE_SWITCH_UNIT)
-                                time.sleep(1)
-                                self._client.client.delegate.write_register(
-                                    0x0001, 512, unit=self.ID_PHASE_SWITCH_UNIT)
+                            if self.config.configuration.duo_num == 0:
+                                phase_switch_unit = self.ID_PHASE_SWITCH_UNIT_CP0
                             else:
-                                self._client.client.delegate.write_register(
-                                    0x0002, 512, unit=self.ID_PHASE_SWITCH_UNIT)
+                                phase_switch_unit = self.ID_PHASE_SWITCH_UNIT_CP1
+                            if phases_to_use == 1:
+                                self._client.client.delegate.write_register(0x0001, 256, unit=phase_switch_unit)
                                 time.sleep(1)
-                                self._client.client.delegate.write_register(
-                                    0x0002, 256, unit=self.ID_PHASE_SWITCH_UNIT)
+                                self._client.client.delegate.write_register(0x0001, 512, unit=phase_switch_unit)
+                            else:
+                                self._client.client.delegate.write_register(0x0002, 512, unit=phase_switch_unit)
+                                time.sleep(1)
+                                self._client.client.delegate.write_register(0x0002, 256, unit=phase_switch_unit)
                     except AttributeError:
                         self._create_client()
                         self._validate_version()
