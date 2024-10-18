@@ -2,11 +2,9 @@ import logging
 
 from control.algorithm import common
 from control.loadmanagement import LimitingValue, Loadmanagement
-from control.counter import Counter
 from control.chargepoint.chargepoint import Chargepoint
 from control.algorithm.filter_chargepoints import (get_chargepoints_by_mode_and_counter,
                                                    get_preferenced_chargepoint_charging)
-from modules.common.utils.component_parser import get_component_name_by_id
 
 log = logging.getLogger(__name__)
 
@@ -28,12 +26,12 @@ class AdditionalCurrent:
                 while len(preferenced_chargepoints):
                     cp = preferenced_chargepoints[0]
                     missing_currents, counts = common.get_missing_currents_left(preferenced_chargepoints)
-                    available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter)
+                    available_currents, limit = Loadmanagement().get_available_currents(missing_currents, counter, cp)
                     cp.data.control_parameter.limit = limit
                     available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
                     current = common.get_current_to_set(
                         cp.data.set.current, available_for_cp, cp.data.set.target_current)
-                    self._set_loadmangement_message(current, limit, cp, counter)
+                    self._set_loadmangement_message(current, limit, cp)
                     common.set_current_counterdiff(
                         current - cp.data.set.charging_ev_data.ev_template.data.min_current,
                         current,
@@ -47,12 +45,11 @@ class AdditionalCurrent:
     def _set_loadmangement_message(self,
                                    current: float,
                                    limit: LimitingValue,
-                                   chargepoint: Chargepoint,
-                                   counter: Counter) -> None:
+                                   chargepoint: Chargepoint) -> None:
         # Strom muss an diesem Zähler geändert werden
         if (current != max(chargepoint.data.set.target_current, chargepoint.data.set.current or 0) and
                 # Strom erreicht nicht die vorgegebene Stromstärke
                 current != max(
                     chargepoint.data.control_parameter.required_currents)):
             chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
-                                          f"{limit.value.format(get_component_name_by_id(counter.num))}")
+                                          f"{limit}")

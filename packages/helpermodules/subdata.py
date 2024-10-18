@@ -9,7 +9,7 @@ import re
 import subprocess
 import paho.mqtt.client as mqtt
 
-from control import bat_all, bat, pv_all
+from control import bat_all, bat, io_device, pv_all
 from control.chargepoint import chargepoint
 from control import counter
 from control import counter_all
@@ -32,7 +32,6 @@ from control import pv
 from dataclass_utils import dataclass_from_dict
 from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
 from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
-from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
 from modules.common.configurable_tariff import ConfigurableElectricityTariff
 from modules.common.simcount.simcounter_state import SimCounterState
 from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
@@ -67,6 +66,7 @@ class SubData:
         "cp1": InternalChargepoint(),
         "global_data": GlobalHandlerData(),
         "rfid_data": RfidData()}
+    io_data: Dict[str, io_device.IoDevice] = {}
     optional_data = optional.Optional()
     system_data = {"system": system.System()}
     graph_data = graph.Graph()
@@ -132,6 +132,7 @@ class SubData:
             ("openWB/bat/#", 2),
             ("openWB/general/#", 2),
             ("openWB/graph/#", 2),
+            ("openWB/io/#", 2),
             ("openWB/optional/#", 2),
             ("openWB/counter/#", 2),
             ("openWB/command/command_completed", 2),
@@ -174,6 +175,8 @@ class SubData:
             self.process_general_topic(self.general_data, msg)
         elif "openWB/graph/" in msg.topic:
             self.process_graph_topic(self.graph_data, msg)
+        elif "openWB/io/" in msg.topic:
+            self.process_io_topic(self.io_data, msg)
         elif "openWB/internal_chargepoint/" in msg.topic:
             self.process_internal_chargepoint_topic(client, self.internal_chargepoint_data, msg)
         elif "openWB/optional/" in msg.topic:
@@ -571,23 +574,7 @@ class SubData:
         """
         try:
             if re.search("/general/", msg.topic) is not None:
-                if re.search("/general/ripple_control_receiver/module", msg.topic) is not None:
-                    config_dict = decode_payload(msg.payload)
-                    if config_dict["type"] is None:
-                        var.data.ripple_control_receiver.module = None
-                        var.ripple_control_receiver = None
-                    else:
-                        mod = importlib.import_module(".ripple_control_receivers." +
-                                                      config_dict["type"]+".ripple_control_receiver", "modules")
-                        config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                        var.data.ripple_control_receiver.module = config_dict
-                        var.ripple_control_receiver = ConfigurableRcr(
-                            config=config, component_initialiser=mod.create_ripple_control_receiver)
-                elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
-                    self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
-                elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:
-                    return
-                elif re.search("/general/prices/", msg.topic) is not None:
+                if re.search("/general/prices/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.prices, msg)
                 elif re.search("/general/chargemode_config/", msg.topic) is not None:
                     if re.search("/general/chargemode_config/pv_charging/", msg.topic) is not None:
@@ -629,6 +616,36 @@ class SubData:
                     self.set_json_payload_class(var.data, msg)
                 else:
                     self.set_json_payload_class(var.data, msg)
+        except Exception:
+            log.exception("Fehler im subdata-Modul")
+
+    def process_io_topic(self, var: Dict[str, io_device.IoDevice], msg: mqtt.MQTTMessage):
+        """ Handler für die Graph-Topics
+
+        Parameter
+        ----------
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
+            enthält Topic und Payload
+        """
+        try:
+            if re.search("/io/module/[0-9]+/", msg.topic) is not None:
+                index = get_index(msg.topic)
+                payload = decode_payload(msg.payload)
+                if payload == "":
+                    if "io"+index in var:
+                        var.pop("io"+index)
+                else:
+                    if "io"+index not in var:
+                        var["io"+index] = io_device.IoDevice(int(index), payload)
+                if re.search("/io/module/[0-9]+/config", msg.topic) is not None:
+                    self.set_json_payload_class(var["io"+index].data.config, msg)
+                    mod = importlib.import_module(".io."+payload["type"]+".api", "modules")
+                    config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
+                    var["io"+index].module = mod.create_io(config)
+                else:
+                    self.set_json_payload_class(var["io"+index].data, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

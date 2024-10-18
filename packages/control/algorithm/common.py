@@ -84,7 +84,7 @@ def set_current_counterdiff(diff: float, current: float, chargepoint: Chargepoin
             if surplus:
                 data.data.counter_data[counter].update_surplus_values_left(diffs)
             else:
-                data.data.counter_data[counter].update_values_left(diffs)
+                data.data.counter_data[counter].update_values_left(diffs, chargepoint)
 
     chargepoint.data.set.current = current
     log.info(f"LP{chargepoint.num}: Stromstärke {current}A")
@@ -152,7 +152,7 @@ def update_raw_data(preferenced_chargepoints: List[Chargepoint],
             if surplus:
                 data.data.counter_data[counter].update_surplus_values_left(diffs)
             else:
-                data.data.counter_data[counter].update_values_left(diffs)
+                data.data.counter_data[counter].update_values_left(diffs, chargepoint)
 
 
 def consider_not_charging_chargepoint_in_loadmanagement(cp: Chargepoint) -> bool:

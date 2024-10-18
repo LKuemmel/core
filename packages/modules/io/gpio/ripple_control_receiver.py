@@ -4,7 +4,7 @@ from typing import Tuple
 
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import RcrState
-from modules.ripple_control_receivers.gpio.config import GpioRcr
+from modules.io.devices.gpio.config import GpioRcr
 
 log = logging.getLogger(__name__)
 has_gpio = True
