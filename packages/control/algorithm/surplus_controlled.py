@@ -50,7 +50,8 @@ class SurplusControlled:
             missing_currents, counts = common.get_missing_currents_left(chargepoints)
             available_currents, limit = Loadmanagement().get_available_currents_surplus(missing_currents,
                                                                                         counter,
-                                                                                        feed_in_yield)
+                                                                                        feed_in=feed_in_yield,
+                                                                                        surplus=True)
             cp.data.control_parameter.limit = limit
             available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
             if counter.get_control_range_state(feed_in_yield) == ControlRangeState.MIDDLE:
@@ -67,8 +68,9 @@ class SurplusControlled:
             else:
                 current = available_for_cp
 
-            current = common.get_current_to_set(cp.data.set.current, current, cp.data.set.target_current)
-            self._set_loadmangement_message(current, limit, cp, counter)
+            current = common.get_current_to_set(cp.data.set.current, current,
+                                                available_for_cp, cp.data.set.target_current)
+            self._set_loadmangement_message(current, limit, cp)
             limited_current = self._limit_adjust_current(cp, current)
             limited_current = self._fix_deviating_evse_current(limited_current, cp)
             common.set_current_counterdiff(
@@ -81,8 +83,7 @@ class SurplusControlled:
     def _set_loadmangement_message(self,
                                    current: float,
                                    limit: LimitingValue,
-                                   chargepoint: Chargepoint,
-                                   counter: Counter) -> None:
+                                   chargepoint: Chargepoint) -> None:
         # Strom muss an diesem Zähler geändert werden
         if (current != chargepoint.data.set.current and
                 # Strom erreicht nicht die vorgegebene Stromstärke
@@ -90,7 +91,7 @@ class SurplusControlled:
                 # im PV-Laden wird der Strom immer durch die Leistung begrenzt
                 limit != LimitingValue.POWER):
             chargepoint.set_state_and_log(f"Es kann nicht mit der vorgegebenen Stromstärke geladen werden"
-                                          f"{limit.value.format(get_component_name_by_id(counter.num))}")
+                                          f"{limit}")
 
     # tested
     def filter_by_feed_in_limit(self, chargepoints: List[Chargepoint]) -> Tuple[List[Chargepoint], List[Chargepoint]]:

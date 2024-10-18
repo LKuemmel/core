@@ -39,7 +39,6 @@ from modules.common.abstract_vehicle import GeneralVehicleConfig
 from modules.common.component_type import ComponentType
 from modules.devices.sungrow.sungrow.version import Version
 from modules.display_themes.cards.config import CardsDisplayTheme
-from modules.ripple_control_receivers.gpio.config import GpioRcr
 from modules.web_themes.standard_legacy.config import StandardLegacyWebTheme
 from modules.devices.good_we.good_we.version import GoodWeVersion
 
@@ -1316,11 +1315,11 @@ class UpdateConfig:
             convert_file(file)
         self.__update_topic("openWB/system/datastore_version", 36)
 
-    def upgrade_datastore_36(self) -> None:
-        if hardware_configuration.get_hardware_configuration_setting("ripple_control_receiver_configured", False):
-            Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
-        hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
-        self.__update_topic("openWB/system/datastore_version", 37)
+    # def upgrade_datastore_36(self) -> None:
+    #     if hardware_configuration.get_hardware_configuration_setting("ripple_control_receiver_configured", False):
+    #         Pub().pub("openWB/set/general/ripple_control_receiver/module", dataclass_utils.asdict(GpioRcr()))
+    #     hardware_configuration.remove_setting_hardware_configuration("ripple_control_receiver_configured")
+    #     self.__update_topic("openWB/system/datastore_version", 37)
 
     def upgrade_datastore_37(self) -> None:
         def collect_names(topic: str, payload) -> None:

@@ -1,5 +1,28 @@
 """ Modul, um die Daten vom Broker zu erhalten.
 """
+from modules.vehicles.manual.config import ManualSoc
+from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
+    GlobalHandlerData, InternalChargepoint, RfidData)
+from modules.common.simcount.simcounter_state import SimCounterState
+from modules.common.configurable_tariff import ConfigurableElectricityTariff
+from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
+from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
+from dataclass_utils import dataclass_from_dict
+from helpermodules.pub import Pub
+from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
+from helpermodules.utils.run_command import run_command
+from helpermodules.messaging import MessageType, pub_system_message
+from helpermodules.broker import InternalBrokerClient
+from helpermodules.abstract_plans import AutolockPlan
+from helpermodules import graph, system
+from control.optional_data import Ocpp
+from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
+from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
+from control.chargepoint.chargepoint_data import Log
+from control.chargepoint.chargepoint_all import AllChargepoints
+from control.chargepoint import chargepoint
+from control import bat_all, bat, io_device, pv_all
+from control import bat_all, bat, counter, counter_all, ev, general, optional, pv, pv_all
 import importlib
 import logging
 from pathlib import Path
@@ -8,30 +31,6 @@ from typing import Dict, Union
 import re
 import subprocess
 import paho.mqtt.client as mqtt
-
-from control import bat_all, bat, counter, counter_all, ev, general, optional, pv, pv_all
-from control.chargepoint import chargepoint
-from control.chargepoint.chargepoint_all import AllChargepoints
-from control.chargepoint.chargepoint_data import Log
-from control.chargepoint.chargepoint_state_update import ChargepointStateUpdate
-from control.chargepoint.chargepoint_template import CpTemplate, CpTemplateData
-from control.optional_data import Ocpp
-from helpermodules import graph, system
-from helpermodules.abstract_plans import AutolockPlan
-from helpermodules.broker import InternalBrokerClient
-from helpermodules.messaging import MessageType, pub_system_message
-from helpermodules.utils.run_command import run_command
-from helpermodules.utils.topic_parser import decode_payload, get_index, get_second_index
-from helpermodules.pub import Pub
-from dataclass_utils import dataclass_from_dict
-from modules.common.abstract_vehicle import CalculatedSocState, GeneralVehicleConfig
-from modules.common.configurable_backup_cloud import ConfigurableBackupCloud
-from modules.common.configurable_ripple_control_receiver import ConfigurableRcr
-from modules.common.configurable_tariff import ConfigurableElectricityTariff
-from modules.common.simcount.simcounter_state import SimCounterState
-from modules.internal_chargepoint_handler.internal_chargepoint_handler_config import (
-    GlobalHandlerData, InternalChargepoint, RfidData)
-from modules.vehicles.manual.config import ManualSoc
 
 log = logging.getLogger(__name__)
 mqtt_log = logging.getLogger("mqtt")
@@ -61,6 +60,7 @@ class SubData:
         "cp1": InternalChargepoint(),
         "global_data": GlobalHandlerData(),
         "rfid_data": RfidData()}
+    io_data: Dict[str, io_device.IoDevice] = {}
     optional_data = optional.Optional()
     system_data = {"system": system.System()}
     graph_data = graph.Graph()
@@ -126,6 +126,7 @@ class SubData:
             ("openWB/bat/#", 2),
             ("openWB/general/#", 2),
             ("openWB/graph/#", 2),
+            ("openWB/io/#", 2),
             ("openWB/optional/#", 2),
             ("openWB/counter/#", 2),
             ("openWB/command/command_completed", 2),
@@ -168,6 +169,8 @@ class SubData:
             self.process_general_topic(self.general_data, msg)
         elif "openWB/graph/" in msg.topic:
             self.process_graph_topic(self.graph_data, msg)
+        elif "openWB/io/" in msg.topic:
+            self.process_io_topic(self.io_data, msg)
         elif "openWB/internal_chargepoint/" in msg.topic:
             self.process_internal_chargepoint_topic(client, self.internal_chargepoint_data, msg)
         elif "openWB/optional/" in msg.topic:
@@ -576,23 +579,7 @@ class SubData:
         """
         try:
             if re.search("/general/", msg.topic) is not None:
-                if re.search("/general/ripple_control_receiver/module", msg.topic) is not None:
-                    config_dict = decode_payload(msg.payload)
-                    if config_dict["type"] is None:
-                        var.data.ripple_control_receiver.module = None
-                        var.ripple_control_receiver = None
-                    else:
-                        mod = importlib.import_module(".ripple_control_receivers." +
-                                                      config_dict["type"]+".ripple_control_receiver", "modules")
-                        config = dataclass_from_dict(mod.device_descriptor.configuration_factory, config_dict)
-                        var.data.ripple_control_receiver.module = config_dict
-                        var.ripple_control_receiver = ConfigurableRcr(
-                            config=config, component_initializer=mod.create_ripple_control_receiver)
-                elif re.search("/general/ripple_control_receiver/get/", msg.topic) is not None:
-                    self.set_json_payload_class(var.data.ripple_control_receiver.get, msg)
-                elif re.search("/general/ripple_control_receiver/", msg.topic) is not None:
-                    return
-                elif re.search("/general/prices/", msg.topic) is not None:
+                if re.search("/general/prices/", msg.topic) is not None:
                     self.set_json_payload_class(var.data.prices, msg)
                 elif re.search("/general/chargemode_config/", msg.topic) is not None:
                     if re.search("/general/chargemode_config/pv_charging/", msg.topic) is not None:
@@ -634,6 +621,36 @@ class SubData:
                     self.set_json_payload_class(var.data, msg)
                 else:
                     self.set_json_payload_class(var.data, msg)
+        except Exception:
+            log.exception("Fehler im subdata-Modul")
+
+    def process_io_topic(self, var: Dict[str, io_device.IoDevice], msg: mqtt.MQTTMessage):
+        """ Handler für die Graph-Topics
+
+        Parameter
+        ----------
+        var : Dictionary
+            enthält aktuelle Daten
+        msg :
+            enthält Topic und Payload
+        """
+        try:
+            if re.search("/io/module/[0-9]+/", msg.topic) is not None:
+                index = get_index(msg.topic)
+                payload = decode_payload(msg.payload)
+                if payload == "":
+                    if "io"+index in var:
+                        var.pop("io"+index)
+                else:
+                    if "io"+index not in var:
+                        var["io"+index] = io_device.IoDevice(int(index), payload)
+                if re.search("/io/module/[0-9]+/config", msg.topic) is not None:
+                    self.set_json_payload_class(var["io"+index].data.config, msg)
+                    mod = importlib.import_module(".io."+payload["type"]+".api", "modules")
+                    config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
+                    var["io"+index].module = mod.create_io(config)
+                else:
+                    self.set_json_payload_class(var["io"+index].data, msg)
         except Exception:
             log.exception("Fehler im subdata-Modul")
 

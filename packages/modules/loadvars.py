@@ -30,6 +30,8 @@ class Loadvars:
             wait_for_module_update_completed(self.event_module_update_completed, topic)
             joined_thread_handler(self._get_general(), data.data.general_data.data.control_interval/3)
             joined_thread_handler(self._set_general(), data.data.general_data.data.control_interval/3)
+            joined_thread_handler(self._get_io(), data.data.general_data.data.control_interval/3)
+            joined_thread_handler(self._set_io(), data.data.general_data.data.control_interval/3)
             wait_for_module_update_completed(self.event_module_update_completed, topic)
         except Exception:
             log.exception("Fehler im loadvars-Modul")
@@ -105,6 +107,36 @@ class Loadvars:
                 threads.append(threading.Thread(target=update_values,
                                args=(data.data.general_data.ripple_control_receiver,),
                                name="set ripple control receiver"))
+        except Exception:
+            log.exception("Fehler im loadvars-Modul")
+        finally:
+            return threads
+
+    def _get_io(self) -> List[threading.Thread]:
+        threads = []  # type: List[threading.Thread]
+        try:
+            for io_device in data.data.io_data.values():
+                try:
+                    threads.append(
+                        threading.Thread(target=io_device.module.update,
+                                         args=(), name="get ripple control receiver"))
+                except Exception:
+                    log.exception("Fehler im loadvars-Modul")
+        except Exception:
+            log.exception("Fehler im loadvars-Modul")
+        finally:
+            return threads
+
+    def _set_io(self) -> List[threading.Thread]:
+        threads = []  # type: List[threading.Thread]
+        try:
+            for io_device in data.data.io_data.values():
+                try:
+                    threads.append(threading.Thread(target=update_values,
+                                                    args=(io_device,),
+                                                    name="set ripple control receiver"))
+                except Exception:
+                    log.exception("Fehler im loadvars-Modul")
         except Exception:
             log.exception("Fehler im loadvars-Modul")
         finally:
