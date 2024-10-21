@@ -23,7 +23,10 @@ class Dimming:
 
 @dataclass
 class Get:
-    input: List[bool] = False
+    analog_input: List[bool] = False
+    digital_input: List[bool] = False
+    analog_output: List[bool] = False
+    digital_output: List[bool] = False
 
 
 def get_factory():

@@ -140,6 +140,7 @@ class SubData:
             ("openWB/system/backup_cloud/#", 2),
             ("openWB/system/device/module_update_completed", 2),
             ("openWB/system/device/+/config", 2),
+            ("openWB/system/io/#", 2),
             ("openWB/LegacySmartHome/Status/wattnichtHaus", 2),
         ])
         Pub().pub("openWB/system/subdata_initialized", True)
@@ -635,7 +636,7 @@ class SubData:
             enthält Topic und Payload
         """
         try:
-            if re.search("/io/module/[0-9]+/", msg.topic) is not None:
+            if re.search("/io/", msg.topic) is not None:
                 index = get_index(msg.topic)
                 payload = decode_payload(msg.payload)
                 if payload == "":
@@ -644,11 +645,8 @@ class SubData:
                 else:
                     if "io"+index not in var:
                         var["io"+index] = io_device.IoDevice(int(index), payload)
-                if re.search("/io/module/[0-9]+/config", msg.topic) is not None:
-                    self.set_json_payload_class(var["io"+index].data.config, msg)
-                    mod = importlib.import_module(".io."+payload["type"]+".api", "modules")
-                    config = dataclass_from_dict(mod.device_descriptor.configuration_factory, payload)
-                    var["io"+index].module = mod.create_io(config)
+                if re.search("/io/[0-9]+/config", msg.topic) is not None:
+                    pass
                 else:
                     self.set_json_payload_class(var["io"+index].data, msg)
         except Exception:
@@ -842,6 +840,20 @@ class SubData:
                     var["system"].backup_cloud = ConfigurableBackupCloud(config, mod.create_backup_cloud)
             elif "openWB/system/backup_cloud/backup_before_update" in msg.topic:
                 self.set_json_payload(var["system"].data["backup_cloud"], msg)
+            elif re.search("^.+/io/[0-9]+/config$", msg.topic) is not None:
+                index = get_index(msg.topic)
+                if decode_payload(msg.payload) == "":
+                    if "io"+index in var:
+                        var.pop("io"+index)
+                    else:
+                        log.error("Es konnte kein IO-Device mit der ID " +
+                                  str(index)+" gefunden werden.")
+                else:
+                    io_config = decode_payload(msg.payload)
+                    dev = importlib.import_module(f".io.{io_config['type']}.api",
+                                                  "modules")
+                    config = dataclass_from_dict(dev.device_descriptor.configuration_factory, io_config)
+                    var["io"+index] = dev.create_io(config)
             else:
                 if "module_update_completed" in msg.topic:
                     self.event_module_update_completed.set()

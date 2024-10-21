@@ -1095,6 +1095,9 @@ class SetData:
                     self._validate_value(msg, bool)
                 else:
                     self.__unknown_topic(msg)
+            elif "io" in msg.topic:
+                if "/config" in msg.topic:
+                    self._validate_value(msg, "json")
             else:
                 # hier kommen auch noch alte Topics ohne json-Format an.
                 # log.error("Unbekanntes set-Topic: "+str(msg.topic)+", "+

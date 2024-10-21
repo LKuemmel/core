@@ -18,7 +18,7 @@ except ImportError:
     log.warning("RSE disabled!")
 
 
-def create_ripple_control_receiver(config: AddOn):
+def create_io(config: AddOn):
     def read() -> Tuple[bool, bool]:
         if has_gpio:
             return IoState(digital_input={21: GPIO.input(21) == GPIO.LOW,

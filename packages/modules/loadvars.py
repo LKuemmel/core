@@ -28,8 +28,6 @@ class Loadvars:
                 wait_for_module_update_completed(self.event_module_update_completed, topic)
                 data.data.copy_module_data()
             wait_for_module_update_completed(self.event_module_update_completed, topic)
-            joined_thread_handler(self._get_general(), data.data.general_data.data.control_interval/3)
-            joined_thread_handler(self._set_general(), data.data.general_data.data.control_interval/3)
             joined_thread_handler(self._get_io(), data.data.general_data.data.control_interval/3)
             joined_thread_handler(self._set_io(), data.data.general_data.data.control_interval/3)
             wait_for_module_update_completed(self.event_module_update_completed, topic)
@@ -85,32 +83,6 @@ class Loadvars:
                 if t == module_thread.name:
                     return True
         return False
-
-    def _get_general(self) -> List[threading.Thread]:
-        threads = []  # type: List[threading.Thread]
-        try:
-            # Beim ersten Durchlauf wird in jedem Fall eine Exception geworfen,
-            # da die Daten erstmalig ins data-Modul kopiert werden müssen.
-            if data.data.general_data.data.ripple_control_receiver.module:
-                threads.append(
-                    threading.Thread(target=data.data.general_data.ripple_control_receiver.update,
-                                     args=(), name="get ripple control receiver"))
-        except Exception:
-            log.exception("Fehler im loadvars-Modul")
-        finally:
-            return threads
-
-    def _set_general(self) -> List[threading.Thread]:
-        threads = []  # type: List[threading.Thread]
-        try:
-            if data.data.general_data.data.ripple_control_receiver.module:
-                threads.append(threading.Thread(target=update_values,
-                               args=(data.data.general_data.ripple_control_receiver,),
-                               name="set ripple control receiver"))
-        except Exception:
-            log.exception("Fehler im loadvars-Modul")
-        finally:
-            return threads
 
     def _get_io(self) -> List[threading.Thread]:
         threads = []  # type: List[threading.Thread]

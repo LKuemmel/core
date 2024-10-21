@@ -1,5 +1,5 @@
 import inspect
-from inspect import FullArgSpec
+from inspect import FullArgSpec, isclass
 import typing
 from typing import TypeVar, Type, Union
 
@@ -41,7 +41,7 @@ def _dataclass_from_dict_recurse(value, requested_type: Type[T]):
     return dataclass_from_dict(requested_type, value) \
         if isinstance(value, dict) and not (
             _is_optional_of_dict(requested_type) or
-            issubclass(requested_type, dict)) \
+            issubclass(requested_type if isclass(requested_type) else type(bool), dict)) \
         else value
 
 

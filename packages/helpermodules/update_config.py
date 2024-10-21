@@ -423,6 +423,7 @@ class UpdateConfig:
         "^openWB/system/device/[0-9]+/component/[0-9]+/simulation/timestamp_present$",
         "^openWB/system/device/[0-9]+/config$",
         "^openWB/system/device/module_update_completed$",
+        "^openWB/system/io/[0-9]+/config$",
         "^openWB/system/ip_address$",
         "^openWB/system/lastlivevaluesJson$",
         "^openWB/system/mqtt/bridge/[0-9]+$",
