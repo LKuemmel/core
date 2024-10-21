@@ -14,7 +14,14 @@ class IoValueStoreBroker(ValueStore[IoState]):
 
     def update(self):
         try:
-            pub_to_broker(f"openWB/set/io/{self.num}/get/input", self.state.input)
+            if self.state.digital_input:
+                pub_to_broker(f"openWB/set/io/{self.num}/get/digital_input", self.state.digital_input)
+            if self.state.digital_output:
+                pub_to_broker(f"openWB/set/io/{self.num}/get/digital_output", self.state.digital_output)
+            if self.state.analog_input:
+                pub_to_broker(f"openWB/set/io/{self.num}/get/analog_input", self.state.analog_input)
+            if self.state.analog_output:
+                pub_to_broker(f"openWB/set/io/{self.num}/get/analog_output", self.state.analog_output)
         except Exception as e:
             raise FaultState.from_exception(e)
 

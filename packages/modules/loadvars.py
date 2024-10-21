@@ -118,8 +118,8 @@ class Loadvars:
             for io_device in data.data.io_data.values():
                 try:
                     threads.append(
-                        threading.Thread(target=io_device.module.update,
-                                         args=(), name="get ripple control receiver"))
+                        threading.Thread(target=io_device.module.read,
+                                         args=(), name="get io state"))
                 except Exception:
                     log.exception("Fehler im loadvars-Modul")
         except Exception:
@@ -134,7 +134,7 @@ class Loadvars:
                 try:
                     threads.append(threading.Thread(target=update_values,
                                                     args=(io_device,),
-                                                    name="set ripple control receiver"))
+                                                    name="publish io state"))
                 except Exception:
                     log.exception("Fehler im loadvars-Modul")
         except Exception:

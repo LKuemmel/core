@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+from typing import Dict
+from modules.common.component_state import IoState
+from modules.common.configurable_io import ConfigurableIo
 from modules.io.dimm_kit.config import IoLan
 from modules.common.version_by_telnet import get_version_by_telnet
 from modules.common.modbus import ModbusTcpClient_
-from enum import Enum
 import logging
 import socket
 
@@ -11,19 +13,20 @@ from modules.common.abstract_device import DeviceDescriptor
 log = logging.getLogger(__name__)
 
 
-class State(Enum):
-    OPENED = False
-    CLOSED = True
-
-
 VALID_VERSIONS = ["openWB DimmModul"]
 
 
 def create_io(config: IoLan):
-    def updater():
-        return {0: State(client.read_coils(0x0000, 1, unit=config.configuration.modbus_id)),
-                1: State(client.read_coils(0x0001, 1, unit=config.configuration.modbus_id))
-                }
+    def read():
+        return IoState(
+            analog_input={i: client.read_input_registers(
+                i-1, 1, unit=config.configuration.modbus_id) for i in range(1, 9)},
+            digital_input={i: client.read_coils(i-1, 1, unit=config.configuration.modbus_id) for i in range(1, 9)},
+            digital_output={i: client.read_coils(i-1, 1, unit=config.configuration.modbus_id) for i in range(16, 24)})
+
+    def write(digital_output: Dict[int, int]) -> None:
+        for i, value in digital_output.items():
+            client.write_single_coil(i-1, value, unit=config.configuration.modbus_id)
 
     version = False
     client = ModbusTcpClient_(config.configuration.ip_address, config.configuration.port)
@@ -43,7 +46,7 @@ def create_io(config: IoLan):
     except socket.timeout:
         log.exception("Dimm-Kit")
         raise Exception("Die IP-Adresse ist nicht erreichbar. Bitte den Support kontaktieren.")
-    return updater
+    return ConfigurableIo(config=config, component_reader=read, component_writer=write)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=IoLan)

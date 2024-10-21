@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Dict, Optional
 
-from control.io_device import CONTROLLABLE_CONSUMERS_ACTIONS
+from modules.common.io_setup import IoDeviceSetup
 
 
 class IoLanRcrConfiguration:
@@ -10,12 +10,25 @@ class IoLanRcrConfiguration:
         self.modbus_id = modbus_id
 
 
-class IoLan:
+def analog_input_init():
+    return {i: 0 for i in range(1, 9)}
+
+
+def digital_input_init():
+    return {i: False for i in range(1, 9)}
+
+
+def digital_output_init():
+    return {i: False for i in range(1, 9)}
+
+
+class IoLan(IoDeviceSetup[IoLanRcrConfiguration]):
     def __init__(self,
                  name: str = "openWB Dimm- & Control-Kit",
                  type: str = "dimm_kit",
-                 configuration: IoLanRcrConfiguration = None) -> None:
-        self.name = name
-        self.type = type
-        self.configuration = configuration or IoLanRcrConfiguration()
-        self.actions = {i: CONTROLLABLE_CONSUMERS_ACTIONS for i in range(1, 11)}
+                 configuration: IoLanRcrConfiguration = None,
+                 analog_input: Dict[int, float] = analog_input_init,
+                 digital_input: Dict[int, bool] = digital_input_init,
+                 digital_output: Dict[int, bool] = digital_output_init) -> None:
+        super().__init__(name, type, id, configuration or IoLanRcrConfiguration(), analog_input=analog_input,
+                         digital_input=digital_input, digital_output=digital_output)

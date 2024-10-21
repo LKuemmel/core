@@ -858,7 +858,10 @@ class SetData:
         try:
             if "config" in msg.topic:
                 self._validate_value(msg, "json")
-            elif "get/input" in msg.topic:
+            elif ("get/digital_input" in msg.topic or
+                  "get/digital_output" in msg.topic or
+                  "get/analog_input" in msg.topic or
+                  "get/analog_output" in msg.topic):
                 self._validate_value(msg, "json")
             else:
                 self.__unknown_topic(msg)
