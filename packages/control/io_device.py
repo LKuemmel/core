@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Union
+from control import data
 from dataclass_utils._dataclass_from_dict import dataclass_from_dict
 from dataclass_utils.factories import empty_list_factory
 from helpermodules.pub import Pub
