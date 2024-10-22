@@ -25,6 +25,7 @@ from control.ev import ChargeTemplate, Ev, EvTemplate
 from control.general import General
 from control.optional import Optional
 from modules.common.abstract_device import AbstractDevice
+from modules.common.abstract_io import AbstractIo
 
 log = logging.getLogger(__name__)
 bat_data_lock = threading.Lock()
@@ -263,6 +264,7 @@ class Data:
         log.info(f"pv_all_data\n{self._pv_all_data.data}")
         self._print_dictionaries(self._system_data)
         self._print_device_config(self._system_data)
+        self._print_io_config(self._system_data)
         log.info("\n")
 
     def _print_dictionaries(self, data):
@@ -292,6 +294,14 @@ class Data:
                     log.info(f"{key}\n{dataclass_utils.asdict(value.device_config)}")
                     for comp_key, comp_value in value.components.items():
                         log.info(f"{comp_key}\n{dataclass_utils.asdict(comp_value.component_config)}")
+            except Exception:
+                log.exception("Fehler im Data-Modul")
+
+    def _print_io_config(self, data: Dict[str, AbstractIo]):
+        for key, value in data.items():
+            try:
+                if isinstance(value, AbstractIo):
+                    log.info(f"{key}\n{dataclass_utils.asdict(value.config)}")
             except Exception:
                 log.exception("Fehler im Data-Modul")
 

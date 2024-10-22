@@ -1,24 +1,46 @@
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Union
 from dataclass_utils._dataclass_from_dict import dataclass_from_dict
-from dataclass_utils.factories import empty_dict_factory
+from dataclass_utils.factories import empty_list_factory
 from helpermodules.pub import Pub
 
-CONTROLLABLE_CONSUMERS_ACTIONS = [{"action": "Dimming", "action_parameters": ["cp_num", "max_import_power"]},
-                                  {"action": "ripple_control_receiver", "action_parameters": []},
+CONTROLLABLE_CONSUMERS_ACTIONS = [{"action": "Dimming", "io": {"digital_input": [None]}, "action_parameters": ["cps", "max_import_power"]},
+                                  {"action": "ripple_control_receiver", "io": {
+                                      "digital_input": [None, None, None, None]}, "action_parameters": []},
                                   {"action": "dimming_via_direct_control", "action_parameters": ["cp_num"]}, ]
 
 
 @dataclass
-class Dimming:
-    input: int = 0
-    cp: int = 0
+class DimmingConfig:
+    io_device: int = 0
+    digital_input: int = 0
+    cp_ids: List[int] = empty_list_factory
     max_import_power: int = 0
-    # wird jeden zyklus kopiert und daher zurückgesetzt
-    import_power_left: float = 0
 
-    def __post_init__(self):
-        self.import_power_left = self.max_import_power
+
+class Dimming:
+    def __init__(self, name: str = "dimming", id: int = 0, config: DimmingConfig = None):
+        self.name = name
+        self.id = id
+        self.config = config or DimmingConfig()
+        # wird jeden zyklus kopiert und daher zurückgesetzt
+        self.import_power_left = self.config.max_import_power
+
+    def dimming_get_import_power_left(self, cp_num: int) -> None:
+        if cp_num in self.config.cp_ids:
+            if data.data.io_devices[self.config.io_device].get.digital_input[self.config.digital_input]:
+                return self.import_power_left
+            else:
+                return None
+        else:
+            return None
+
+    def dimming_set_import_power_left(self, used_power: float, cp_num: int) -> None:
+        if cp_num in self.config.cp_ids:
+            self.import_power_left -= used_power
+            return self.import_power_left
+        else:
+            return None
 
 
 @dataclass
@@ -43,19 +65,14 @@ def set_factory():
 
 
 @dataclass
-class IoData:
+class IoDeviceData:
     get: Get = field(default_factory=get_factory)
     set: Set = field(default_factory=set_factory)
-    config: Dict = field(default_factory=empty_dict_factory)
 
 
 class IoDevice:
-
-    def __init__(self, num: int, config: Dict):
-        self.num = num
-        self.actions: List[Dimming] = self.parse_actions_to_dataclass(config["actions"])
-        self.data = IoData()
-        self.module = None
+    def __init__(self):
+        self.data = IoDeviceData()
 
     def parse_actions_to_dataclass(self, action_config: Dict):
         for index, action in enumerate(action_config):
@@ -67,25 +84,23 @@ class IoDevice:
     def dimming_via_direct_control(input_state: bool, cp_num: int) -> None:
         pass
 
-    def dimming_get_import_power_left(self, cp_num: int) -> None:
-        for action in self.actions:
-            if isinstance(action, Dimming):
-                if action.cp == cp_num:
-                    if self.data.get.input[action.input]:
-                        return action.import_power_left
-                    else:
-                        return None
-        else:
-            return None
+    def ripple_control_receiver(input_state: bool) -> None:
+        Pub().pub("openWB/set/general/ripple_control_receiver/get/active", input_state)
 
-    def dimming_set_import_power_left(self, used_power: float, cp_num: int) -> None:
-        for action in self.actions:
-            if isinstance(action, Dimming):
-                if action.cp == cp_num:
-                    action.import_power_left -= used_power
-                    return action.import_power_left
-        else:
-            return None
+
+class IoActions:
+    def __init__(self):
+        self.actions: Dict[int, Union[Dimming]] = {}
+
+    def parse_actions_to_dataclass(self, action_config: Dict):
+        for index, action in enumerate(action_config):
+            action_class = globals()[action["action"]]
+            action_instance = dataclass_from_dict(action_class, action["action_parameters"])
+            action_instance.input = index
+            self.actions.append(action_instance)
+
+    def dimming_via_direct_control(input_state: bool, cp_num: int) -> None:
+        pass
 
     def ripple_control_receiver(input_state: bool) -> None:
         Pub().pub("openWB/set/general/ripple_control_receiver/get/active", input_state)

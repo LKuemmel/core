@@ -15,7 +15,7 @@ def dataclass_from_dict(cls: Type[T], args: Union[dict, T]) -> T:
 
     In case the supplied `args` is already of the desired type, `args` is returned unchanged
     """
-    if isinstance(args, cls):
+    if isinstance(args, cls) if isclass(cls) else isinstance(args, type(cls)):
         return args
     arg_spec = inspect.getfullargspec(cls.__init__)
     return cls(*[_get_argument_value(arg_spec, index, args) for index in range(1, len(arg_spec.args))])
