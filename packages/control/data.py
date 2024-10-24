@@ -264,7 +264,7 @@ class Data:
         log.info(f"pv_all_data\n{self._pv_all_data.data}")
         self._print_dictionaries(self._system_data)
         self._print_device_config(self._system_data)
-        self._print_io_config(self._system_data)
+        self._print_io_device_config(self._system_data)
         log.info("\n")
 
     def _print_dictionaries(self, data):
@@ -297,7 +297,7 @@ class Data:
             except Exception:
                 log.exception("Fehler im Data-Modul")
 
-    def _print_io_config(self, data: Dict[str, AbstractIo]):
+    def _print_io_device_config(self, data: Dict[str, AbstractIo]):
         for key, value in data.items():
             try:
                 if isinstance(value, AbstractIo):
@@ -319,7 +319,8 @@ class Data:
             # werden, sodass die Nutzung einer Referenz vorerst funktioniert.
             self.system_data = {
                 "system": copy.deepcopy(SubData.system_data["system"])} | {
-                k: SubData.system_data[k] for k in SubData.system_data if "device" in k}
+                k: SubData.system_data[k] for k in SubData.system_data if "device" in k} | {
+                k: SubData.system_data[k] for k in SubData.system_data if "io" in k}
             self.general_data = copy.deepcopy(SubData.general_data)
             self.__copy_cp_data()
         except Exception:

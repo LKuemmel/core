@@ -28,7 +28,7 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIo):
         if hasattr(self, "component_reader"):
             # Wenn beim Initialisieren etwas schief gelaufen ist, ursprüngliche Fehlermeldung beibehalten
             with SingleComponentUpdateContext(self.fault_state):
-                self.store(self.component_reader())
+                self.store.set(self.component_reader())
 
     def write(self):
         if hasattr(self, "component_writer"):
@@ -36,11 +36,4 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIo):
             with SingleComponentUpdateContext(self.fault_state):
                 io_state = self.component_writer()
                 if io_state is not None:
-                    self.store(io_state)
-
-
-# {"name": "Dimm-Kit", "type": "dimm_kit", "configuration": {"ip_address": "192.168.1.98",
-#                                                            "port": 8899, "modbus_id": 1}, "actions": {"input_1": {"action_parameters": {"cp": 2}, "action": "direct_control_cp"}}}
-# openWB/set/io/1/config
-# {"name": "openWB Dimm- & Control-Kit", "type": "dimm_kit", "configuration": {"ip_address": null, "port": 8899, "modbus_id": 1},
-#     "actions": {"1": {"action": "Dimming", "action_parameters": {"cp_num": [3, 4], "max_import_power": 4200}}}, "id": 1}
+                    self.store.set(io_state)

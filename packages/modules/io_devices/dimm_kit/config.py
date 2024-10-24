@@ -20,7 +20,7 @@ def digital_input_init():
 
 
 def digital_output_init():
-    return {i: False for i in range(1, 9)}
+    return {i: False for i in range(16, 24)}
 
 
 @auto_str

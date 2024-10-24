@@ -3,6 +3,7 @@ import threading
 from typing import List
 
 from control import data
+from modules.common.abstract_io import AbstractIo
 from modules.utils import wait_for_module_update_completed
 from modules.common.abstract_device import AbstractDevice
 from modules.common.component_type import ComponentType, type_to_topic_mapping
@@ -87,11 +88,12 @@ class Loadvars:
     def _get_io(self) -> List[threading.Thread]:
         threads = []  # type: List[threading.Thread]
         try:
-            for io_device in data.data.io_data.values():
+            for io_device in data.data.system_data.values():
                 try:
-                    threads.append(
-                        threading.Thread(target=io_device.module.read,
-                                         args=(), name="get io state"))
+                    if isinstance(io_device, AbstractIo):
+                        threads.append(
+                            threading.Thread(target=io_device.read,
+                                             args=(), name="get io state"))
                 except Exception:
                     log.exception("Fehler im loadvars-Modul")
         except Exception:
@@ -102,11 +104,12 @@ class Loadvars:
     def _set_io(self) -> List[threading.Thread]:
         threads = []  # type: List[threading.Thread]
         try:
-            for io_device in data.data.io_data.values():
+            for io_device in data.data.system_data.values():
                 try:
-                    threads.append(threading.Thread(target=update_values,
-                                                    args=(io_device,),
-                                                    name="publish io state"))
+                    if isinstance(io_device, AbstractIo):
+                        threads.append(threading.Thread(target=update_values,
+                                                        args=(io_device,),
+                                                        name="publish io state"))
                 except Exception:
                     log.exception("Fehler im loadvars-Modul")
         except Exception:

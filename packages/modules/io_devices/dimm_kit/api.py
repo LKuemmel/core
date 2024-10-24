@@ -4,7 +4,7 @@ from modules.common.component_state import IoState
 from modules.common.configurable_io import ConfigurableIo
 from modules.io_devices.dimm_kit.config import IoLan
 from modules.common.version_by_telnet import get_version_by_telnet
-from modules.common.modbus import ModbusTcpClient_
+from modules.common.modbus import ModbusDataType, ModbusTcpClient_
 import logging
 import socket
 
@@ -19,8 +19,9 @@ VALID_VERSIONS = ["openWB DimmModul"]
 def create_io(config: IoLan):
     def read():
         return IoState(
+            # 1-4th channel test 0-5V voltage, 5-8th channel test 0-25mA current value
             analog_input={i: client.read_input_registers(
-                i-1, 1, unit=config.configuration.modbus_id) for i in range(1, 9)},
+                i-1, ModbusDataType.UINT_8, unit=config.configuration.modbus_id)/1024 for i in range(1, 9)},
             digital_input={i: client.read_coils(i-1, 1, unit=config.configuration.modbus_id) for i in range(1, 9)},
             digital_output={i: client.read_coils(i-1, 1, unit=config.configuration.modbus_id) for i in range(16, 24)})
 
