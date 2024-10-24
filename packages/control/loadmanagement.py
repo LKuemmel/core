@@ -22,6 +22,7 @@ class Loadmanagement:
         raw_currents_left = counter.data.set.raw_currents_left
         available_currents, limit = self._limit_by_dimming_via_direct_control(missing_currents, cp)
         available_currents, limit = self._limit_by_dimming(available_currents, surplus, counter, cp)
+        available_currents, limit = self._limit_by_ripple_control_receiver(available_currents, cp)
         available_currents, limit = self._limit_by_current(counter, available_currents, raw_currents_left)
         available_currents, limit_power = self._limit_by_power(
             counter, available_currents, counter.data.set.raw_power_left, feed_in)
@@ -38,11 +39,11 @@ class Loadmanagement:
     def get_available_currents_surplus(self,
                                        missing_currents: List[float],
                                        counter: Counter,
-                                       dimming_via_direct_control: bool,
+                                       cp: Chargepoint,
                                        feed_in: int = 0) -> Tuple[List[float], Optional[str]]:
         raw_currents_left = counter.data.set.raw_currents_left
-        available_currents, limit = self._limit_by_dimming_via_direct_control(
-            missing_currents, dimming_via_direct_control)
+        available_currents, limit = self._limit_by_dimming_via_direct_control(missing_currents, cp)
+        available_currents, limit = self._limit_by_ripple_control_receiver(available_currents, cp)
         available_currents, limit = self._limit_by_current(available_currents, raw_currents_left)
         available_currents, limit_power = self._limit_by_power(
             available_currents, counter.data.set.surplus_power_left, feed_in)
@@ -110,13 +111,12 @@ class Loadmanagement:
     def _limit_by_dimming_via_direct_control(self,
                                              missing_currents: List[float],
                                              cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
-        if cp.data.get.dimming_via_direct_control:
+        if data.data.io_actions.dimming_via_direct_control(cp.num):
             phases = 3-missing_currents.count(0)
             current_per_phase = 4.2/phases
             available_currents = [current_per_phase if c > 0 else 0 for c in missing_currents]
             log.debug(f"Dimmung per Direkt-Steuerung: {available_currents}")
-            return available_currents, LimitingValue.DIMMING_VIA_DIRECT_CONTROL.value.format(
-                get_component_name_by_id(cp.num))
+            return available_currents, LimitingValue.DIMMING_VIA_DIRECT_CONTROL.value
         else:
             return missing_currents, None
 
@@ -125,11 +125,7 @@ class Loadmanagement:
                           surplus: bool,
                           counter: Counter,
                           cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
-        dimming_power_left = None
-        for io in data.data.io_data.values():
-            dimming_power_left = io.dimming_get_import_power_left(cp.num)
-            if dimming_power_left is not None:
-                break
+        dimming_power_left = data.data.io_actions.dimming_get_import_power_left(cp.num)
         if (counter.data.set.dimming_power_left is not None and
                 surplus is False):
             if sum(available_currents)*230 > dimming_power_left:
@@ -138,3 +134,15 @@ class Loadmanagement:
                 available_currents = [c - overload_per_phase if c > 0 else 0 for c in available_currents]
                 return available_currents, LimitingValue.DIMMING.value
         return available_currents, None
+
+    def _limit_by_ripple_control_receiver(self,
+                                          missing_currents: List[float],
+                                          cp: Chargepoint) -> Tuple[List[float], Optional[str]]:
+        if data.data.io_actions.ripple_control_receiver(cp.num):
+            phases = 3-missing_currents.count(0)
+            current_per_phase = 4.2/phases
+            available_currents = [current_per_phase if c > 0 else 0 for c in missing_currents]
+            log.debug(f"Abschaltung per RSE-Kontakt {available_currents}")
+            return available_currents, LimitingValue.RIPPLE_CONTROL_RECEIVER.value
+        else:
+            return missing_currents, None

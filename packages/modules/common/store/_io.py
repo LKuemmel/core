@@ -6,8 +6,8 @@ from modules.common.store._broker import pub_to_broker
 
 
 class IoValueStoreBroker(ValueStore[IoState]):
-    def __init__(self, component_num: int) -> None:
-        self.num = component_num
+    def __init__(self, num: int) -> None:
+        self.num = num
 
     def set(self, state: IoState) -> None:
         self.state = state
@@ -26,5 +26,5 @@ class IoValueStoreBroker(ValueStore[IoState]):
             raise FaultState.from_exception(e)
 
 
-def get_io_value_store() -> ValueStore[IoState]:
-    return LoggingValueStore(IoValueStoreBroker())
+def get_io_value_store(num: int) -> ValueStore[IoState]:
+    return LoggingValueStore(IoValueStoreBroker(num))

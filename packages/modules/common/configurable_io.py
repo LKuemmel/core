@@ -19,7 +19,7 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIo):
         self.config = config
         self.fault_state = FaultState(ComponentInfo(None, self.config.name,
                                       ComponentType.IO.value))
-        self.store = store.get_io_value_store()
+        self.store = store.get_io_value_store(self.config.id)
         with SingleComponentUpdateContext(self.fault_state):
             self.component_reader = component_reader
             self.component_writer = component_writer

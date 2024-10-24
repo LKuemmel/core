@@ -10,7 +10,6 @@ from control.algorithm.filter_chargepoints import (get_chargepoints_by_chargemod
 from control.chargepoint.charging_type import ChargingType
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_state import ChargepointState, CHARGING_STATES
-from modules.common.utils.component_parser import get_component_name_by_id
 from control.counter import ControlRangeState, Counter
 from control.loadmanagement import LimitingValue, Loadmanagement
 
@@ -50,8 +49,8 @@ class SurplusControlled:
             missing_currents, counts = common.get_missing_currents_left(chargepoints)
             available_currents, limit = Loadmanagement().get_available_currents_surplus(missing_currents,
                                                                                         counter,
-                                                                                        feed_in=feed_in_yield,
-                                                                                        surplus=True)
+                                                                                        cp,
+                                                                                        feed_in=feed_in_yield)
             cp.data.control_parameter.limit = limit
             available_for_cp = common.available_current_for_cp(cp, counts, available_currents, missing_currents)
             if counter.get_control_range_state(feed_in_yield) == ControlRangeState.MIDDLE:

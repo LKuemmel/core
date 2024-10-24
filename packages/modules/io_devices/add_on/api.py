@@ -5,7 +5,7 @@ from typing import Dict, Tuple
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_state import IoState
 from modules.common.configurable_io import ConfigurableIo
-from modules.io.add_on.config import AddOn
+from modules.io_devices.add_on.config import AddOn
 
 log = logging.getLogger(__name__)
 has_gpio = True

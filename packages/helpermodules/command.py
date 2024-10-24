@@ -171,7 +171,7 @@ class Command:
         """ sendet das Topic, zu dem ein neues Io-Device erstellt werden soll.
         """
         new_id = self.max_id_io + 1
-        dev = importlib.import_module(".io."+payload["data"]["type"]+".api", "modules")
+        dev = importlib.import_module(".io_devices."+payload["data"]["type"]+".api", "modules")
         descritpor = dev.device_descriptor.configuration_factory()
         device_default = dataclass_utils.asdict(descritpor)
         device_default["id"] = new_id

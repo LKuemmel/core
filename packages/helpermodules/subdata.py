@@ -850,7 +850,7 @@ class SubData:
                                   str(index)+" gefunden werden.")
                 else:
                     io_config = decode_payload(msg.payload)
-                    dev = importlib.import_module(f".io.{io_config['type']}.api",
+                    dev = importlib.import_module(f".io_devices.{io_config['type']}.api",
                                                   "modules")
                     config = dataclass_from_dict(dev.device_descriptor.configuration_factory, io_config)
                     var["io"+index] = dev.create_io(config)
