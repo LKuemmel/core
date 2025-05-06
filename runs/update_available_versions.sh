@@ -102,7 +102,7 @@ validateTag() {
 	# update current branch
 	currentBranch=$(git -C "$OPENWBBASEDIR" branch --no-color --show-current)
 	echo "currently selected branch: $currentBranch"
-	mosquitto_pub -p 1886 -t "openWB/system/current_branch" -r -m "\"$currentBranch\""
+	mosquitto_pub -p 1886 -t "openWB/system/current_branch" -r -m "test_update_secondary"
 
 	# update $currentBranch commit
 	currentBranchCommit=$(git -C "$OPENWBBASEDIR" log --pretty='format:%ci [%h]' -n1 "$GITREMOTE/$currentBranch")
