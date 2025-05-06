@@ -741,7 +741,7 @@ class Command:
                         if (
                             cp.chargepoint.chargepoint_module.config.type == 'external_openwb' and
                             cp.chargepoint.chargepoint_module.config.configuration.duo_num == 0 and
-                            cp.chargepoint.chargepoint_module.get.version == "Release"
+                            cp.chargepoint.chargepoint_module.get.version == "test_update_secondary"
                         ):
                             time.sleep(2)
                             self.secondaryChargepointUpdate({"data": {"chargepoint": cp}})
