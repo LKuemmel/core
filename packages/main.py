@@ -11,6 +11,7 @@ import functools
 import gc  # GC-Modul importieren
 import collections
 import tracemalloc
+
 # als erstes logging initialisieren, damit auch ImportError geloggt werden
 logger.setup_logging()
 log = logging.getLogger()
@@ -177,8 +178,20 @@ class HandlerAlgorithm:
             logger.clear_in_memory_log_handler("main")
 
             log.info("# ***Start*** ")
-            # log.debug(run_command.run_shell_command("top -b -n 1 | head -n 20"))
+            log.debug(run_command.run_shell_command("top -b -n 1 | head -n 20"))
             # log.debug(f'Drosselung: {run_command.run_shell_command("if which vcgencmd >/dev/null; then vcgencmd get_throttled; else echo not found; fi")}')
+            log.debug(f"Threads: {enumerate()}")
+            for thread in threading.enumerate():
+                logging.debug(f"Thread Name: {thread.name}")
+                if hasattr(thread, "ident"):
+                    thread_id = thread.ident
+                    for tid, frame in sys._current_frames().items():
+                        if tid == thread_id:
+                            logging.debug(f"  File: {frame.f_code.co_filename}, Line: {frame.f_lineno}, Function: {frame.f_code.co_name}")
+                            stack_trace = traceback.format_stack(frame)
+                            logging.debug("  Stack Trace:")
+                            for line in stack_trace:
+                                logging.debug(line.strip())
             Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             if not self.__acquire_lock("handler10Sec", error_threshold=30):
                 return
