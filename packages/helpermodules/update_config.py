@@ -90,7 +90,7 @@ class UpdateConfig:
         "^openWB/chargepoint/get/daily_exported$",
         "^openWB/chargepoint/get/daily_imported$",
         "^openWB/chargepoint/template/[0-9]+$",
-        "^openWB/chargepoint/template/[0-9]+/autolock/[0-9]+$",  # OBSOLET seit 2.1.8
+        "^openWB/chargepoint/template/[0-9]+/autolock/[0-9]+$",
         "^openWB/chargepoint/[0-9]+/config$",
         "^openWB/chargepoint/[0-9]+/control_parameter/chargemode$",
         "^openWB/chargepoint/[0-9]+/control_parameter/current_plan$",
@@ -142,6 +142,8 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/rfid$",
         "^openWB/chargepoint/[0-9]+/get/rfid_timestamp$",
         "^openWB/chargepoint/[0-9]+/set/charging_ev$",
+        "^openWB/chargepoint/[0-9]+/set/charge_template/time_charging/plans/[0-9]+$",
+        "^openWB/chargepoint/[0-9]+/set/charge_template/chargemode/scheduled_charging/plans/[0-9]+$",
         "^openWB/chargepoint/[0-9]+/set/charge_template$",
         "^openWB/chargepoint/[0-9]+/set/current$",
         "^openWB/chargepoint/[0-9]+/set/energy_to_charge$",
@@ -349,8 +351,7 @@ class UpdateConfig:
 
         "^openWB/vehicle/set/vehicle_update_completed$",
         "^openWB/vehicle/template/ev_template/[0-9]+$",
-        "^openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",  # OBSOLET seit 2.1.8
-        # OBSOLET seit 2.1.8
+        "^openWB/vehicle/template/charge_template/[0-9]+/time_charging/plans/[0-9]+$",
         "^openWB/vehicle/template/charge_template/[0-9]+/chargemode/scheduled_charging/plans/[0-9]+$",
         "^openWB/vehicle/template/charge_template/[0-9]+",
         "^openWB/vehicle/[0-9]+/charge_template$",

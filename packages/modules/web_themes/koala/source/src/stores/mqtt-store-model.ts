@@ -62,13 +62,11 @@ export interface ChargePointConnectedVehicleInfo {
   name: string;
 }
 export interface ChargeTemplateConfiguration {
-  id: number;
   name: string;
   prio: boolean;
   load_default: boolean;
   time_charging: {
     active: boolean;
-    plans: TimeChargingPlan[];
   };
   chargemode: {
     selected: string;
@@ -83,24 +81,6 @@ export interface ChargeTemplateConfiguration {
       max_price: number;
       phases_to_use: number;
     };
-    pv_charging: {
-      dc_min_current: number;
-      dc_min_soc_current: number;
-      feed_in_limit: boolean;
-      limit: {
-        selected: string;
-        amount: number;
-        soc: number;
-      };
-      min_current: number;
-      min_soc_current: number;
-      min_soc: number;
-      phases_to_use: number;
-      phases_to_use_min_soc: number;
-    };
-    scheduled_charging: {
-      plans: ScheduledChargingPlan[];
-    };
     instant_charging: {
       current: number;
       dc_current: number;
@@ -111,8 +91,25 @@ export interface ChargeTemplateConfiguration {
       };
       phases_to_use: number;
     };
+    pv_charging: {
+      dc_min_current: number;
+      dc_min_soc_current: number;
+      feed_in_limit: boolean;
+      limit: {
+        selected: string;
+        amount: number;
+        soc: number;
+      };
+      min_current: number;
+      min_soc: number;
+      min_soc_current: number;
+      phases_to_use: number;
+      phases_to_use_min_soc: number;
+    };
+    scheduled_charging: object;
   };
 }
+
 export interface ValueObject {
   textValue: string;
   value: number;

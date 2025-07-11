@@ -1,27 +1,31 @@
 <template>
-	<p class="heading ms-1 pt-2">Pläne für Zielladen:</p>
-	<table v-if="plans.length > 0" class="table table-borderless">
+	<p class="heading ms-1 pt-2">Zielladen:</p>
+	<table class="table table-borderless">
 		<thead>
 			<tr>
-				<th class="tableheader left" />
-				<th class="tableheader left">Plan</th>
-				<th class="tableheader">Zeit</th>
 				<th class="tableheader">Ziel</th>
-				<th class="tableheader">Wiederh.</th>
-
-				<th class="tableheader right" />
+				<th class="tableheader">Limit</th>
+				<th class="tableheader">Zeit</th>
+				<th class="tableheader">Wiederholung</th>
+				<th class="tableheader" />
 			</tr>
 		</thead>
 		<tbody>
-			<tr
-				v-for="(plan, i) in plans"
-				:key="i"
-				:class="plan.active ? 'text-bold' : 'text-normal'"
-			>
+			<tr v-for="(plan, i) in plans" :key="i" :style="cellStyle(i)">
+				<td class="tablecell">{{ plan.limit.soc_scheduled }}%</td>
+				<td class="tablecell">{{ plan.limit.soc_limit }}%</td>
+				<td class="tablecell">
+					{{ timeString(i) }}
+				</td>
+				<td class="tablecell">
+					{{ freqNames[plan.frequency.selected] }}
+				</td>
 				<td class="tablecell left">
 					<a
-						v-if="props.chargePoint.chargeTemplate?.id != undefined"
-						@click="toggleSwitch(i)"
+						:href="
+							'../../settings/#/VehicleConfiguration/charge_template/' +
+							props.chargeTemplateId
+						"
 					>
 						<span
 							:class="plan.active ? 'fa-toggle-on' : 'fa-toggle-off'"
@@ -32,68 +36,32 @@
 						</span
 					></a>
 				</td>
-				<td class="tablecell left">{{ plan.name }}</td>
-				<td class="tablecell">
-					{{ timeString(i) }}
-				</td>
-				<td class="tablecell">
-					{{
-						plan.limit.selected == 'soc'
-							? plan.limit.soc_scheduled + '%'
-							: formatWattH(plan.limit.amount, 0)
-					}}
-				</td>
-				<td class="tablecell">
-					{{ freqNames[plan.frequency.selected] }}
-				</td>
-
-				<td class="tablecell right">
-					<i
-						class="me-1 fa-solid fa-sm fa-circle-info"
-						@click="showPlanDetails = !showPlanDetails"
-					/>
-				</td>
 			</tr>
 		</tbody>
 	</table>
-	<p v-else class="ms-1">
-		Pläne für das Zielladen können in den Einstellungen des Ladeprofils angelegt
-		werden .
-	</p>
-
-	<div v-if="showPlanDetails">
-		<ScheduleDetails
-			v-for="plan in plans"
-			:key="plan.id"
-			:plan="plan"
-			@close="showPlanDetails = false"
-		/>
-	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { ChargePoint, type ChargeSchedule } from '../model'
-import { updateChargeTemplate } from '@/assets/js/sendMessages'
-import ScheduleDetails from './ScheduleDetails.vue'
-import { formatWattH } from '@/assets/js/helpers'
+import { computed } from 'vue'
+import { scheduledChargingPlans, type ChargeSchedule } from '../model'
 
-const showPlanDetails = ref(false)
 const freqNames: { [key: string]: string } = {
 	daily: 'Täglich',
 	once: 'Einmal',
-	weekly: 'Woche',
+	weekly: 'Wöchentlich',
 }
 const props = defineProps<{
-	chargePoint: ChargePoint
+	chargeTemplateId: number
 }>()
 
 //computed
-const plans = computed(
-	() =>
-		props.chargePoint?.chargeTemplate?.chargemode.scheduled_charging.plans ??
-		([] as ChargeSchedule[]),
-)
+const plans = computed(() => {
+	let result: ChargeSchedule[] = []
+	if (scheduledChargingPlans[props.chargeTemplateId]) {
+		result = Object.values(scheduledChargingPlans[props.chargeTemplateId])
+	}
+	return result
+})
 //methods
 function timeString(key: number) {
 	return plans.value[key].time
@@ -104,11 +72,9 @@ function switchStyle(key: number) {
 		: 'var(--color-switchRed)'
 	return { color: style }
 }
-function toggleSwitch(i: number) {
-	props.chargePoint.chargeTemplate!.chargemode.scheduled_charging.plans[
-		i
-	]!.active = !plans.value[i].active
-	updateChargeTemplate(props.chargePoint.id)
+function cellStyle(key: number) {
+	const style = plans.value[key].active ? 'bold' : 'regular'
+	return { 'font-weight': style }
 }
 </script>
 
@@ -117,7 +83,7 @@ function toggleSwitch(i: number) {
 	color: var(--color-fg);
 	background-color: var(--color-bg);
 	text-align: center;
-	font-size: var(--font-settings);
+	font-size: var(--font-medium);
 }
 
 .tableheader {
@@ -134,15 +100,5 @@ function toggleSwitch(i: number) {
 
 .left {
 	text-align: left;
-}
-.text-bold {
-	font-weight: bold;
-}
-.text-normal {
-	font-weight: normal;
-}
-.fa-circle-info {
-	color: var(--color-charging);
-	cursor: pointer;
 }
 </style>

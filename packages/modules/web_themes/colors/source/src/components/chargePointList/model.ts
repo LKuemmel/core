@@ -456,34 +456,22 @@ export interface ConnectedVehicleConfig {
 	priority: boolean
 }
 export interface ChargeTimePlan {
-	id: number
-	name: string
 	active: boolean
-	time: string[]
-	current: number
-	dc_current: number
-	phases_to_use: number
-	limit: {
-		selected: string
-		amount: number
-		soc: number
-	}
 	frequency: {
-		once: string[]
+		once: Array<Date>
 		selected: string
 		weekly: boolean[]
 	}
+	name: string
+	time: Array<string>
+	current: number
 }
 export interface ChargeSchedule {
-	id: number
 	name: string
 	active: boolean
+	timed: boolean
 	time: string
 	current: number
-	dc_current: number
-	phases_to_use: number
-	phases_to_use_pv: number
-	et_active: boolean
 	limit: {
 		selected: string
 		amount: number
@@ -491,7 +479,7 @@ export interface ChargeSchedule {
 		soc_scheduled: number
 	}
 	frequency: {
-		once: string
+		once: Array<Date>
 		selected: string
 		weekly: boolean[]
 	}
@@ -503,7 +491,7 @@ export interface ChargeTemplate {
 	load_default: boolean
 	time_charging: {
 		active: boolean
-		plans: [ChargeTimePlan]
+		plans: object
 	}
 	chargemode: {
 		selected: ChargeMode
@@ -534,7 +522,7 @@ export interface ChargeTemplate {
 			phases_to_use_min_soc: number
 		}
 		scheduled_charging: {
-			plans: [ChargeSchedule]
+			plans: object
 		}
 		instant_charging: {
 			current: number
@@ -568,6 +556,12 @@ export interface EvTemplate {
 export const chargePoints: { [key: number]: ChargePoint } = reactive({})
 export const vehicles: { [key: number]: Vehicle } = reactive({}) // the list of vehicles, key is the vehicle ID
 export const chargeTemplates: { [key: number]: ChargeTemplate } = reactive({})
+export const scheduledChargingPlans: { [key: number]: ChargeSchedule[] } =
+	reactive({})
+export const timeChargingPlans: { [key: number]: ChargeTimePlan[] } = reactive(
+	{},
+)
+
 export const evTemplates: { [key: number]: EvTemplate } = reactive({})
 
 export function addChargePoint(chargePointIndex: number) {

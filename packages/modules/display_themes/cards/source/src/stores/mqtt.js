@@ -835,24 +835,16 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehicleScheduledChargingPlans(state) {
       return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
-          return state.getChargePointConnectedVehicleChargeTemplate(
-            chargePointId,
-          ).chargemode.scheduled_charging.plans;
-        }
-        return {};
+        return state.getWildcardTopics(
+          `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/+`,
+        );
       };
     },
     getChargePointConnectedVehicleTimeChargingPlans(state) {
       return (chargePointId) => {
-        if (
-          state.getChargePointConnectedVehicleChargeTemplate(chargePointId)
-        ) {
-          return state.getChargePointConnectedVehicleChargeTemplate(
-            chargePointId,
-          ).time_charging.plans;
-        }
-        return {};
+        return state.getWildcardTopics(
+          `openWB/chargepoint/${chargePointId}/set/charge_template/time_charging/plans/+`,
+        );
       };
     },
 

@@ -3,12 +3,8 @@ import datetime
 from typing import List, Optional
 
 
-def once_period_factory() -> List:
-    return [datetime.datetime.today().strftime("%Y-%m-%d"), datetime.datetime.today().strftime("%Y-%m-%d")]
-
-
-def once_date_factory() -> List:
-    return datetime.datetime.today().strftime("%Y-%m-%d")
+def once_factory() -> List:
+    return [datetime.datetime.today().strftime("%Y%m%d"), datetime.datetime.today().strftime("%Y%m%d")]
 
 
 def weekly_factory() -> List:
@@ -31,25 +27,14 @@ def limit_factory() -> Limit:
 
 
 @dataclass
-class FrequencyPeriod:
+class Frequency:
     selected: str = "daily"
-    once: List[str] = field(default_factory=once_period_factory)
+    once: List[str] = field(default_factory=once_factory)
     weekly: List[bool] = field(default_factory=weekly_factory)
 
 
-def frequency_period_factory() -> FrequencyPeriod:
-    return FrequencyPeriod()
-
-
-@dataclass
-class FrequencyDate:
-    selected: str = "daily"
-    once: str = field(default_factory=once_date_factory)
-    weekly: List[bool] = field(default_factory=weekly_factory)
-
-
-def frequency_date_factory() -> FrequencyDate:
-    return FrequencyDate()
+def frequency_factory() -> Frequency:
+    return Frequency()
 
 
 @dataclass
@@ -67,12 +52,12 @@ def scheduled_limit_factory() -> ScheduledLimit:
 @dataclass
 class PlanBase:
     active: bool = True
+    frequency: Frequency = field(default_factory=frequency_factory)
 
 
 @dataclass
 class TimeframePlan(PlanBase):
     time: List[str] = field(default_factory=time_factory)  # ToDo: aktuelle Zeit verwenden + 1 Stunde
-    frequency: FrequencyPeriod = field(default_factory=frequency_period_factory)
 
 
 @dataclass
@@ -80,7 +65,6 @@ class ScheduledChargingPlan(PlanBase):
     current: int = 14
     dc_current: float = 145
     et_active: bool = False
-    frequency: FrequencyDate = field(default_factory=frequency_date_factory)
     id: Optional[int] = None
     name: str = "neuer Zielladen-Plan"
     limit: ScheduledLimit = field(default_factory=scheduled_limit_factory)
@@ -101,5 +85,4 @@ class TimeChargingPlan(TimeframePlan):
 
 @dataclass
 class AutolockPlan(TimeframePlan):
-    id: Optional[int] = None
     name: str = "neuer Plan für Sperren nach Uhrzeit"

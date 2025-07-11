@@ -338,34 +338,23 @@ export default {
       }
     },
     setChargePointConnectedVehicleScheduledChargingPlanActive(
-      id,
-      plan_id,
+      plan_key,
       active,
     ) {
-      console.log(`setChargePointConnectedVehicleScheduledChargingPlanActive: ${id} ${plan_id} - ${active}`);
-      const templateTopic = `openWB/chargepoint/${id}/set/charge_template`;
-      const template = this.mqttStore.updateState(
-        templateTopic,
+      const plan = this.mqttStore.updateState(
+        `${plan_key}`,
         active,
-        `chargemode.scheduled_charging.plans.${plan_id}.active`,
+        "active",
       );
-      this.$root.sendTopicToBroker(
-        templateTopic,
-        template,
-      );
+      this.$root.sendTopicToBroker(`${plan_key}`, plan);
     },
-    setChargePointConnectedVehicleTimeChargingPlanActive(id, plan_id, active) {
-      console.log(`setChargePointConnectedVehicleTimeChargingPlanActive: ${id} ${plan_id} - ${active}`);
-      const templateTopic = `openWB/chargepoint/${id}/set/charge_template`;
-      const template = this.mqttStore.updateState(
-        templateTopic,
+    setChargePointConnectedVehicleTimeChargingPlanActive(plan_key, active) {
+      const plan = this.mqttStore.updateState(
+        `${plan_key}`,
         active,
-        `time_charging.plans.${plan_id}.active`,
-      )
-      this.$root.sendTopicToBroker(
-        templateTopic,
-        template,
+        "active",
       );
+      this.$root.sendTopicToBroker(`${plan_key}`, plan);
     },
   },
 };
@@ -1265,12 +1254,11 @@ export default {
       >
         <i-alert
           v-if="
-            !mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
-              modalChargePointId,
-            ) ||
+            Object.keys(
               mqttStore.getChargePointConnectedVehicleScheduledChargingPlans(
                 modalChargePointId,
-              ).length === 0
+              ),
+            ).length === 0
           "
           color="warning"
         >
@@ -1299,8 +1287,7 @@ export default {
                   :color="plan.active ? 'success' : 'danger'"
                   @click="
                     setChargePointConnectedVehicleScheduledChargingPlanActive(
-                      modalChargePointId,
-                      plan.id,
+                      planKey,
                       !plan.active,
                     )
                   "
@@ -1401,12 +1388,11 @@ export default {
           </i-form-group>
           <i-alert
             v-if="
-              !mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
-                modalChargePointId,
-              ) ||
+              Object.keys(
                 mqttStore.getChargePointConnectedVehicleTimeChargingPlans(
                   modalChargePointId,
-                ).length === 0
+                ),
+              ).length === 0
             "
             color="warning"
           >
@@ -1435,8 +1421,7 @@ export default {
                     :color="plan.active ? 'success' : 'danger'"
                     @click="
                       setChargePointConnectedVehicleTimeChargingPlanActive(
-                        modalChargePointId,
-                        plan.id,
+                        planKey,
                         !plan.active,
                       )
                     "
