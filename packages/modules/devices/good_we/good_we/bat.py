@@ -14,6 +14,7 @@ from modules.devices.good_we.good_we.version import GoodWeVersion
 
 
 class KwargsDict(TypedDict):
+    device_id: int
     modbus_id: int
     version: GoodWeVersion
     firmware: int
@@ -26,6 +27,7 @@ class GoodWeBat(AbstractBat):
         self.kwargs: KwargsDict = kwargs
 
     def initialize(self) -> None:
+        self.__device_id: int = self.kwargs['device_id']
         self.__modbus_id: int = self.kwargs['modbus_id']
         self.version: GoodWeVersion = self.kwargs['version']
         self.firmware: int = self.kwargs['firmware']
@@ -50,8 +52,8 @@ class GoodWeBat(AbstractBat):
                 exported = self.__tcp_client.read_holding_registers(
                     35209, ModbusDataType.UINT_32, unit=self.__modbus_id) * 100
             else:
-                power = self.__tcp_client.read_holding_registers(35182, ModbusDataType.INT_32, unit=self.__modbus_id)*-1
-                soc = self.__tcp_client.read_holding_registers(37007, ModbusDataType.UINT_16, unit=self.__modbus_id)
+                power = self.__tcp_client.read_holding_registers(35264, ModbusDataType.INT_32, unit=self.__modbus_id)*-1
+                soc = self.__tcp_client.read_holding_registers(39005, ModbusDataType.UINT_16, unit=self.__modbus_id)
                 imported, exported = self.sim_counter.sim_count(power)
 
         bat_state = BatState(
