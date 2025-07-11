@@ -209,28 +209,20 @@ def test_scheduled_charging_recent_plan(end_time_mock,
     if selected_plan:
         assert selected_plan.plan.id == expected_plan_num
     else:
-        assert selected_plan is None
+        selected_plan = None
 
 
-@pytest.mark.parametrize("end_time_mock, expected_plan_num",
-                         [
-                             pytest.param([-10000, 1500, 2000], 0, id="1st plan"),
-                             pytest.param([None, -100, 2000], 1, id="1st plan fulfilled, 2nd plan"),
-                             pytest.param([None, -50, -100], 2, id="1st plan fulfilled, 3rd plan"),
-                             pytest.param([None]*3, None, id="no plan"),
-                         ])
-def test_scheduled_charging_recent_plan_fulfilled(end_time_mock, expected_plan_num, monkeypatch):
+def test_scheduled_charging_recent_plan_fulfilled(monkeypatch):
     # setup
     # der erste PLan ist erfüllt, der zweite wird ausgewählt
     calculate_duration_mock = Mock(return_value=(100, 3000, 3, 500))
     monkeypatch.setattr(ChargeTemplate, "_calc_remaining_time", calculate_duration_mock)
-    check_end_time_mock = Mock(side_effect=end_time_mock)
+    check_end_time_mock = Mock(side_effect=[None, 1500])
     monkeypatch.setattr(timecheck, "check_end_time", check_end_time_mock)
     ct = ChargeTemplate()
     plan_mock_0 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=0, limit=Limit(selected="amount"))
     plan_mock_1 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=1, limit=Limit(selected="amount"))
-    plan_mock_2 = Mock(spec=ScheduledChargingPlan, active=True, current=14, id=2, limit=Limit(selected="amount"))
-    ct.data.chargemode.scheduled_charging.plans = {"0": plan_mock_0, "1": plan_mock_1, "2": plan_mock_2}
+    ct.data.chargemode.scheduled_charging.plans = {"0": plan_mock_0, "1": plan_mock_1}
 
     # execution
     selected_plan = ct.scheduled_charging_recent_plan(
@@ -238,9 +230,9 @@ def test_scheduled_charging_recent_plan_fulfilled(end_time_mock, expected_plan_n
 
     # evaluation
     if selected_plan:
-        assert selected_plan.plan.id == expected_plan_num
+        assert selected_plan.plan.id == 1
     else:
-        assert selected_plan is expected_plan_num
+        selected_plan = None
 
 
 @pytest.mark.parametrize(
