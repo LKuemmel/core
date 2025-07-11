@@ -271,8 +271,7 @@ class ChargeTemplate:
                      soc: Optional[float],
                      control_parameter: ControlParameter,
                      charging_type: str,
-                     used_amount: float,
-                     max_phases_hw: int) -> Tuple[int, str, Optional[str], int]:
+                     used_amount: float) -> Tuple[int, str, Optional[str], int]:
         """ prüft, ob Min-oder Max-Soc erreicht wurden und setzt entsprechend den Ladestrom.
         """
         message = None
@@ -295,7 +294,6 @@ class ChargeTemplate:
                 if data.data.optional_data.et_charging_allowed(eco_charging.max_price):
                     sub_mode = "instant_charging"
                     message = self.CHARGING_PRICE_LOW
-                    phases = max_phases_hw
                 else:
                     current = control_parameter.min_current
                     message = self.CHARGING_PRICE_EXCEEDED
