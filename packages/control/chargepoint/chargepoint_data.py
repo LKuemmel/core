@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from threading import Event
+import threading
 from typing import Dict, List, Optional, Protocol
 from control.chargepoint.chargepoint_template import CpTemplate
 
@@ -174,7 +174,7 @@ class Config:
     ocpp_chargebox_id: Optional[str] = None
 
     def __post_init__(self):
-        self.event_update_state: Event
+        self.event_update_state: threading.Event
 
     @property
     def ev(self) -> int:
@@ -217,7 +217,7 @@ class ChargepointData:
     set: Set = field(default_factory=set_factory)
     config: Config = field(default_factory=config_factory)
 
-    def set_event(self, event: Optional[Event] = None) -> None:
+    def set_event(self, event: Optional[threading.Event] = None) -> None:
         self.event_update_state = event
         if event:
             self.config.event_update_state = event

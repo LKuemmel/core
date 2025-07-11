@@ -1,5 +1,6 @@
 import logging
 from threading import local
+import threading
 from typing import Optional, List, Union, Any, Dict
 from helpermodules.constants import NO_ERROR
 
@@ -47,7 +48,7 @@ class MultiComponentUpdateContext:
             for component in self.components:
                 component.update()
     """
-    __thread_local = local()
+    __thread_local = threading.local()
 
     def __init__(self, device_components: Union[Dict[Any, Any], List[Any]], error_handler: Optional[callable] = None):
         self.__device_components = \

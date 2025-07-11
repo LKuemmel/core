@@ -1,5 +1,5 @@
 import _thread as thread
-from threading import Timer
+import threading
 import sys
 
 
@@ -15,7 +15,7 @@ def exit_after(s):
     '''
     def outer(fn):
         def inner(*args, **kwargs):
-            timer = Timer(s, quit_function, args=[fn.__name__])
+            timer = threading.Timer(s, quit_function, args=[fn.__name__])
             timer.start()
             try:
                 result = fn(*args, **kwargs)
