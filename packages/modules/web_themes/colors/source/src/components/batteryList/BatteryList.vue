@@ -36,12 +36,16 @@ Hagen */
 				</span>
 			</InfoItem>
 		</div>
+<<<<<<< HEAD
 		<BLBattery
 			v-for="[key, battery] in batteries"
 			:key="key"
 			:bat="battery"
 			class="px-0"
 		/>
+=======
+		<BLBattery v-for="[key, battery] in batteries" :key="key" :bat="battery" />
+>>>>>>> parent of 8df44b81a (Feature simplify chargemode (#2276))
 	</WbWidgetFlex>
 </template>
 

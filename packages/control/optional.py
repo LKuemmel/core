@@ -38,7 +38,7 @@ class Optional(OcppMixin):
         if self.mon_module is not None:
             self.mon_module.stop_monitoring()
 
-    def et_provider_available(self) -> bool:
+    def _et_provider_available(self) -> bool:
         return self.et_module is not None
 
     def et_charging_allowed(self, max_price: float):
@@ -50,7 +50,7 @@ class Optional(OcppMixin):
         False: Preis liegt darüber
         """
         try:
-            if self.et_provider_available():
+            if self._et_provider_available():
                 if self.et_get_current_price() <= max_price:
                     return True
                 else:
@@ -65,7 +65,7 @@ class Optional(OcppMixin):
             return False
 
     def et_get_current_price(self):
-        if self.et_provider_available():
+        if self._et_provider_available():
             return self.data.et.get.prices[str(int(create_unix_timestamp_current_full_hour()))]
         else:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
@@ -81,7 +81,7 @@ class Optional(OcppMixin):
         ------
         list: Key des Dictionary (Unix-Sekunden der günstigen Stunden)
         """
-        if self.et_provider_available() is False:
+        if self._et_provider_available() is False:
             raise Exception("Kein Anbieter für strompreisbasiertes Laden konfiguriert.")
         try:
             prices = self.data.et.get.prices

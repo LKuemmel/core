@@ -190,36 +190,7 @@ export const useMqttStore = defineStore("mqtt", {
       }
       return undefined;
     },
-    getDefaultView: (state) => {
-      if (state.getThemeConfiguration) {
-        const views = {
-          'dashboard': state.getThemeConfiguration.enable_dashboard_view,
-          'energy-flow': state.getThemeConfiguration.enable_energy_flow_view,
-          'charge-points': state.getThemeConfiguration.enable_charge_points_view,
-          'status': state.getThemeConfiguration.enable_status_view,
-        };
-        if (state.getThemeConfiguration.default_view !== undefined) {
-          if (views[state.getThemeConfiguration.default_view] === true) {
-            return state.getThemeConfiguration.default_view;
-          } else {
-            console.warn(`default view '${state.getThemeConfiguration.default_view}' is not enabled, check your configuration!`);
-          }
-        }
-        for (const [view, enabled] of Object.entries(views)) {
-          if (enabled) {
-            return view;
-          }
-        }
-      }
-      return undefined;
-    },
-    getDefaultViewTimeout: (state) => {
-      if (state.getThemeConfiguration) {
-        return state.getThemeConfiguration.default_view_timeout;
-      }
-      return 0;
-    },
-    getDashboardEnabled(state) {
+    getDashBoardEnabled(state) {
       if (state.getThemeConfiguration) {
         return state.getThemeConfiguration.enable_dashboard_view;
       }
@@ -231,6 +202,7 @@ export const useMqttStore = defineStore("mqtt", {
       }
       return true;
     },
+
     getChargePointsEnabled(state) {
       if (state.getThemeConfiguration) {
         return state.getThemeConfiguration.enable_charge_points_view;
@@ -636,8 +608,12 @@ export const useMqttStore = defineStore("mqtt", {
     },
     getChargePointConnectedVehicleChargeTemplate(state) {
       return (chargePointId) => {
+        let chargeTemplateId =
+          state.getChargePointConnectedVehicleChargeTemplateIndex(
+            chargePointId,
+          );
         return state.topics[
-          `openWB/chargepoint/${chargePointId}/set/charge_template`
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}`
         ];
       };
     },
@@ -713,16 +689,6 @@ export const useMqttStore = defineStore("mqtt", {
         return { selected: undefined };
       };
     },
-    getChargePointConnectedVehicleInstantChargingPhases(state) {
-      return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
-          return state.getChargePointConnectedVehicleChargeTemplate(
-            chargePointId,
-          ).chargemode.instant_charging.phases_to_use;
-        }
-        return undefined;
-      };
-    },
     getChargePointConnectedVehiclePvChargingFeedInLimit(state) {
       return (chargePointId) => {
         if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
@@ -741,26 +707,6 @@ export const useMqttStore = defineStore("mqtt", {
           ).chargemode.pv_charging.min_current;
         }
         return undefined;
-      };
-    },
-    getChargePointConnectedVehiclePvChargingPhases(state) {
-      return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
-          return state.getChargePointConnectedVehicleChargeTemplate(
-            chargePointId,
-          ).chargemode.pv_charging.phases_to_use;
-        }
-        return undefined;
-      };
-    },
-    getChargePointConnectedVehiclePvChargingLimit(state) {
-      return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
-          return state.getChargePointConnectedVehicleChargeTemplate(
-            chargePointId,
-          ).chargemode.pv_charging.limit;
-        }
-        return { selected: undefined };
       };
     },
     getChargePointConnectedVehiclePvChargingMinSoc(state) {
@@ -783,67 +729,35 @@ export const useMqttStore = defineStore("mqtt", {
         return undefined;
       };
     },
-    getChargePointConnectedVehiclePvChargingMinSocPhases(state) {
+    getChargePointConnectedVehiclePvChargingMaxSoc(state) {
       return (chargePointId) => {
         if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
           return state.getChargePointConnectedVehicleChargeTemplate(
             chargePointId,
-          ).chargemode.pv_charging.phases_to_use_min_soc;
-        }
-        return undefined;
-      };
-    },
-    getChargePointConnectedVehicleEcoChargingCurrent(state) {
-      return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
-          return state.getChargePointConnectedVehicleChargeTemplate(
-            chargePointId,
-          ).chargemode.eco_charging.current;
-        }
-        return undefined;
-      };
-    },
-    getChargePointConnectedVehicleEcoChargingPhases(state) {
-      return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
-          return state.getChargePointConnectedVehicleChargeTemplate(
-            chargePointId,
-          ).chargemode.eco_charging.phases_to_use;
-        }
-        return undefined;
-      };
-    },
-    getChargePointConnectedVehicleEcoChargingLimit(state) {
-      return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
-          return state.getChargePointConnectedVehicleChargeTemplate(
-            chargePointId,
-          ).chargemode.eco_charging.limit;
-        }
-        return { selected: undefined };
-      };
-    },
-    getChargePointConnectedVehicleEcoChargingMaxPrice(state) {
-      return (chargePointId) => {
-        if (state.getChargePointConnectedVehicleChargeTemplate(chargePointId)) {
-          return state.getChargePointConnectedVehicleChargeTemplate(
-            chargePointId,
-          ).chargemode.eco_charging.max_price * 100000;
+          ).chargemode.pv_charging.max_soc;
         }
         return undefined;
       };
     },
     getChargePointConnectedVehicleScheduledChargingPlans(state) {
       return (chargePointId) => {
+        let chargeTemplateId =
+          state.getChargePointConnectedVehicleChargeTemplateIndex(
+            chargePointId,
+          );
         return state.getWildcardTopics(
-          `openWB/chargepoint/${chargePointId}/set/charge_template/chargemode/scheduled_charging/plans/+`,
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}/chargemode/scheduled_charging/plans/+`,
         );
       };
     },
     getChargePointConnectedVehicleTimeChargingPlans(state) {
       return (chargePointId) => {
+        let chargeTemplateId =
+          state.getChargePointConnectedVehicleChargeTemplateIndex(
+            chargePointId,
+          );
         return state.getWildcardTopics(
-          `openWB/chargepoint/${chargePointId}/set/charge_template/time_charging/plans/+`,
+          `openWB/vehicle/template/charge_template/${chargeTemplateId}/time_charging/plans/+`,
         );
       };
     },
@@ -934,6 +848,7 @@ export const useMqttStore = defineStore("mqtt", {
     getRfidEnabled() {
       return this.getValueBool("openWB/optional/rfid/active");
     },
+<<<<<<< HEAD
 
     /* electricity tariff provider */
     getEtConfigured(state){
@@ -949,6 +864,8 @@ export const useMqttStore = defineStore("mqtt", {
     getEtPrices(state) {
       return state.topics["openWB/optional/et/get/prices"];
     },
+=======
+>>>>>>> parent of 8df44b81a (Feature simplify chargemode (#2276))
   },
   actions: {
     updateSetting(setting, value) {
@@ -1005,10 +922,8 @@ export const useMqttStore = defineStore("mqtt", {
         } else {
           this.topics[topic] = payload;
         }
-        return this.topics[topic];
       } else {
         console.debug("topic not found: ", topic);
-        return undefined;
       }
     },
     updateChartData() {
@@ -1032,14 +947,14 @@ export const useMqttStore = defineStore("mqtt", {
     },
     updateState(topic, value, objectPath = undefined) {
       console.debug("updateState:", topic, value, objectPath);
-      return this.updateTopic(topic, value, objectPath);
+      this.updateTopic(topic, value, objectPath);
     },
     chargeModeList() {
       var chargeModes = [
         { id: "instant_charging" },
         { id: "pv_charging" },
         { id: "scheduled_charging" },
-        { id: "eco_charging" },
+        { id: "standby" },
         { id: "stop" },
       ];
       chargeModes.forEach((mode) => {
@@ -1055,11 +970,11 @@ export const useMqttStore = defineStore("mqtt", {
         case "pv_charging":
           return { mode: mode, label: "PV", class: "success" };
         case "scheduled_charging":
-          return { mode: mode, label: "Ziel", class: "primary" };
+          return { mode: mode, label: "Zielladen", class: "primary" };
         case "time_charging":
-          return { mode: mode, label: "Zeit", class: "warning" };
-        case "eco_charging":
-          return { mode: mode, label: "Eco", class: "secondary" };
+          return { mode: mode, label: "Zeitladen", class: "warning" };
+        case "standby":
+          return { mode: mode, label: "Standby", class: "secondary" };
         case "stop":
           return { mode: mode, label: "Stop", class: "dark" };
         default:
@@ -1089,7 +1004,6 @@ export const useMqttStore = defineStore("mqtt", {
       const beginDate = new Date(dateArray[0]);
       const endDate = new Date(dateArray[1]);
       if (beginDate.getFullYear() == endDate.getFullYear()) {
-        separator = `.${separator}`;
         if (beginDate.getMonth() != endDate.getMonth()) {
           // add display of month if different and year is identical
           beginFormat.month = endFormat.month;
@@ -1104,37 +1018,14 @@ export const useMqttStore = defineStore("mqtt", {
       )}${separator}${this.formatDate(dateArray[1], endFormat)}`;
     },
     formatWeeklyScheduleDays(weekDays) {
-        const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-        let planDays = [];
-        let rangeStart = null;
-
-        weekDays.forEach((dayValue, index) => {
-            if (dayValue) {
-                if (rangeStart === null) {
-                    rangeStart = index;
-                }
-            } else {
-                if (rangeStart !== null) {
-                    if (rangeStart === index - 1) {
-                        planDays.push(days[rangeStart]);
-                    } else {
-                        planDays.push(`${days[rangeStart]}-${days[index - 1]}`);
-                    }
-                    rangeStart = null;
-                }
-            }
-        });
-
-        // Handle the case where the last day(s) of the week are true
-        if (rangeStart !== null) {
-            if (rangeStart === weekDays.length - 1) {
-                planDays.push(days[rangeStart]);
-            } else {
-                planDays.push(`${days[rangeStart]}-${days[weekDays.length - 1]}`);
-            }
+      const days = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+      let planDays = [];
+      weekDays.forEach(function (dayValue, index) {
+        if (dayValue == true) {
+          planDays.push(days[index]);
         }
-
-        return planDays.join(", ");
-    }
+      });
+      return planDays.join(",");
+    },
   },
 });

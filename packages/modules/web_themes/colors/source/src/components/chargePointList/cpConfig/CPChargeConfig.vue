@@ -9,9 +9,8 @@
 		:infotext="infotext['chargemode']"
 		:fullwidth="true"
 	>
-		<RadioInput2
+		<RadioInput
 			v-model="cp.chargeMode"
-			:columns="3"
 			:options="
 				Object.keys(chargemodes).map((v) => [
 					chargemodes[v].name,
@@ -24,13 +23,12 @@
 	</ConfigItem>
 	<!-- Select the vehicle -->
 	<ConfigItem
-		v-if="Object.values(vehicles).filter((v) => v.visible).length > 1"
 		title="Fahrzeug wechseln"
 		icon="fa-car"
 		:infotext="infotext['vehicle']"
 		:fullwidth="true"
 	>
-		<RadioInput2
+		<RadioInput
 			v-model.number="cp.connectedVehicle"
 			:options="
 				Object.values(vehicles)
@@ -45,9 +43,7 @@
 		:infotext="infotext['locked']"
 		:fullwidth="true"
 	>
-		<template #inline-item>
-			<SwitchInput v-model="cp.isLocked" />
-		</template>
+		<SwitchInput v-model="cp.isLocked" />
 	</ConfigItem>
 	<!-- Priority -->
 	<ConfigItem
@@ -56,9 +52,7 @@
 		:infotext="infotext['priority']"
 		:fullwidth="true"
 	>
-		<template #inline-item>
-			<SwitchInput v-model="cp.hasPriority" />
-		</template>
+		<SwitchInput v-model="cp.hasPriority" />
 	</ConfigItem>
 	<!-- Scheduled Charging -->
 	<ConfigItem
@@ -67,9 +61,7 @@
 		:infotext="infotext['timeplan']"
 		:fullwidth="true"
 	>
-		<template #inline-item>
-			<SwitchInput v-model="cp.timedCharging" />
-		</template>
+		<SwitchInput v-model="cp.timedCharging" />
 	</ConfigItem>
 	<!-- Priority mode if battery exists -->
 	<ConfigItem
@@ -79,15 +71,15 @@
 		:infotext="infotext['pvpriority']"
 		:fullwidth="true"
 	>
-		<RadioInput2
+		<RadioInput
 			v-model="globalData.pvBatteryPriority"
 			:options="evPriorityModes"
 		>
-		</RadioInput2
+		</RadioInput
 	></ConfigItem>
 
 	<!-- Price based Charging -->
-	<!-- <ConfigItem
+	<ConfigItem
 		v-if="etData.active"
 		title="Strompreisbasiert laden"
 		icon="fa-money-bill"
@@ -96,7 +88,6 @@
 	>
 		<SwitchInput v-model="cp.etActive" />
 	</ConfigItem>
- -->
 </template>
 
 <script setup lang="ts">
@@ -105,8 +96,8 @@ import { ChargePoint, vehicles } from '../model'
 import ConfigItem from '../../shared/ConfigItem.vue'
 import { infotext } from '@/assets/js/themeConfig'
 import SwitchInput from '../../shared/SwitchInput.vue'
-import RadioInput2 from '@/components/shared/RadioInput2.vue'
-//import { etData } from '@/components/priceChart/model'
+import RadioInput from '@/components/shared/RadioInput.vue'
+import { etData } from '@/components/priceChart/model'
 import { globalData } from '@/assets/js/model'
 import { evPriorityModes } from '@/assets/js/types'
 const props = defineProps<{

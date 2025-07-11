@@ -20,8 +20,8 @@ export default {
     size="lg"
   >
     <nav-item
-      v-if="mqttStore.getDashboardEnabled"
-      :to="{ name: 'dashboard' }"
+      v-if="mqttStore.getDashBoardEnabled"
+      :to="{ name: 'dash-board' }"
     >
       Übersicht
     </nav-item>

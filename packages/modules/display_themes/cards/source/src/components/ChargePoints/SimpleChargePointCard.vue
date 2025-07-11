@@ -1,6 +1,6 @@
 <script>
 import { useMqttStore } from "@/stores/mqtt.js";
-import DashboardCard from "@/components/DashboardCard.vue";
+import DashBoardCard from "@/components/DashBoardCard.vue";
 import ChargePointPlugBadge from "@/components/ChargePointPlugBadge.vue";
 import ChargePointLockButton from "@/components/ChargePointLockButton.vue";
 import ChargePointCodeButton from "@/components/ChargePointCodeButton.vue";
@@ -41,7 +41,7 @@ library.add(
 export default {
   name: "ChargePointCard",
   components: {
-    DashboardCard,
+    DashBoardCard,
     ChargePointPlugBadge,
     ChargePointLockButton,
     ChargePointCodeButton,
@@ -108,7 +108,7 @@ export default {
 </script>
 
 <template>
-  <dashboard-card color="primary">
+  <dash-board-card color="primary">
     <template #headerLeft>
       {{ mqttStore.getChargePointName(chargePointId) }}
     </template>
@@ -276,7 +276,7 @@ export default {
         </i-column>
       </i-row>
     </i-container>
-  </dashboard-card>
+  </dash-board-card>
 </template>
 
 <style scoped>

@@ -45,7 +45,7 @@ iframe {
 #log {
 	overflow-x: auto;
 	font-family: 'Courier New', Courier, monospace;
-	white-space: pre;
+	white-space: nowrap;
 	padding-bottom: 0;
 	margin-bottom: 0;
 	flex-grow: 1;

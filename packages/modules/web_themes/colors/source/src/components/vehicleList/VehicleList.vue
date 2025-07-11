@@ -11,7 +11,7 @@
 				(v) => v.visible,
 			)"
 			:key="index"
-			class="subgrid px-4"
+			class="subgrid"
 		>
 			<VlVehicle :vehicle="vehicle" />
 		</div>

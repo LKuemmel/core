@@ -117,11 +117,19 @@ const cpColor = computed(() => {
 const nameX = computed(() => {
 	switch (props.order) {
 		case 0:
+<<<<<<< HEAD
 			return 3 // x position of first vehicle
 		case 1:
 			return props.width - 3 // x position of 2nd vehicle
 		case 2:
 			return props.width / 2 // x position of battery
+=======
+			return 3 // first vehicle
+		case 1:
+			return props.width - 3 // 2nd vehicle
+		case 2:
+			return props.width / 2 // battery
+>>>>>>> parent of 8df44b81a (Feature simplify chargemode (#2276))
 		default:
 			return 0 // error
 	}

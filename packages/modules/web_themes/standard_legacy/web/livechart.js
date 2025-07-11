@@ -510,7 +510,7 @@ function initDataset(datasetId) {
 
 function truncateData(data) {
 	var limit = Date.now() - themeConfiguration.history_chart_range;
-	while (data[0]?.timestamp < limit) {
+	while (data[0].timestamp < limit) {
 		data.shift();
 	}
 }

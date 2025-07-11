@@ -115,14 +115,9 @@ function setIframeSource() {
 }
 
 function addLog(message) {
-	const logElement = document.getElementById('log');
-	let displayedMessages = logElement.innerHTML.split("\n");
-	if (displayedMessages.length > 25) {
-		displayedMessages.shift();
-	}
-	displayedMessages.push(message);
-	logElement.innerHTML = displayedMessages.join("\n");
-	logElement.scrollTo(0, logElement.scrollHeight); // Scroll to the last element
+	const logElement = document.querySelector('#log');
+	logElement.insertAdjacentHTML("beforeend", "<br />");
+	logElement.insertAdjacentText("beforeend", message);
 }
 
 function handleMessage(topic, payload) {
@@ -138,7 +133,7 @@ function handleMessage(topic, payload) {
 	} else {
 		document.getElementById("update").classList.add("hide");
 	}
-	if (topic.match(/^openWB\/system\//i)) { processSystemTopics(topic, payload); }
+	if (topic.match(/^openwb\/system\//i)) { processSystemTopics(topic, payload); }
 	setIframeSource();
 }  // end handleMessage
 

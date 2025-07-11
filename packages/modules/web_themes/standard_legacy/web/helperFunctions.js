@@ -1,8 +1,7 @@
 /**
- * helper functions
+ * helper functions for setup-pages
  *
  * @author Michael Ortenstein
- * @author Lutz Bender
  */
 
 function updateLabel(elementId) {
@@ -94,26 +93,27 @@ function setInputValue(elementId, value) {
 	}
 }
 
-function getTopic(element) {
-	var topic = element.data('topic');
-	if (topic === undefined) {
-		return undefined;
-	}
-	var cp = parseInt(element.closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
-	var ev = parseInt(element.closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
-	var ct = parseInt(element.closest('[data-charge-template]').data('charge-template'));  // get attribute charge-template-# of parent element
-	var cpt = parseInt(element.closest('[data-charge-point-template]').data('charge-point-template'));  // get attribute charge-point-template-# of parent element
-	var et = parseInt(element.closest('[data-ev-template]').data('ev-template'));  // get attribute ev-template-# of parent element
-	var schedule = parseInt(element.closest('[data-plan]').data('plan'));  // get attribute plan-# of parent element
-	topic = topic.replace('<cp>', cp);
-	topic = topic.replace('<ev>', ev);
-	topic = topic.replace('<ct>', ct);
-	topic = topic.replace('<cpt>', cpt);
-	topic = topic.replace('<et>', et);
-	topic = topic.replace('<sched>', schedule);
-	if (topic.includes('/NaN/')) {
-		console.error('missing cp, ev, ct, cpt, et or sched data');
-		return undefined;
+function getTopicToSendTo(elementId) {
+	var element = $('#' + $.escapeSelector(elementId));
+	// var topic = element.data('topicprefix') + elementId;
+	// topic = topic.replace('/get/', '/set/');
+	// if (topic.includes('MaxPriceForCharging')) {
+	//     topic = 'openWB/set/awattar/MaxPriceForCharging'
+	// }
+	var topic = $(element).data('topic');
+	if (topic != undefined) {
+		var cp = parseInt($(element).closest('[data-cp]').data('cp'));  // get attribute cp-# of parent element
+		var ev = parseInt($(element).closest('[data-ev]').data('ev'));  // get attribute ev-# of parent element
+		var ct = parseInt($(element).closest('[data-charge-template]').data('charge-template'));  // get attribute charge-template-# of parent element
+		topic = topic.replace('<cp>', cp);
+		topic = topic.replace('<ev>', ev);
+		topic = topic.replace('<ct>', ct);
+		if (topic.includes('/NaN/')) {
+			console.error('missing cp, ev or ct data', topic);
+			topic = undefined;
+		}
+	} else {
+		console.warn("element without topic changed!");
 	}
 	return topic;
 }
@@ -139,12 +139,7 @@ function setToggleBtnGroup(groupId, option) {
 		chargemodeOptionsShowHide(btnGroup, option);
 	}
 	if (btnGroup.hasClass('charge-point-instant-charge-limit-selected')) {
-		chargemodeLimitOptionsShowHide(btnGroup, 'instant', option);
+		chargemodeLimitOptionsShowHide(btnGroup, option);
 	}
-	if (btnGroup.hasClass('charge-point-pv-charge-limit-selected')) {
-		chargemodeLimitOptionsShowHide(btnGroup, 'pv', option);
-	}
-	if (btnGroup.hasClass('charge-point-eco-charge-limit-selected')) {
-		chargemodeLimitOptionsShowHide(btnGroup, 'eco', option);
-	}
+
 }

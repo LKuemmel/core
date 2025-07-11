@@ -211,15 +211,18 @@
 					</div>
 					<!-- ET Information -->
 					<hr class="divider grid-col-12" />
-
 					<InfoItem
 						v-if="etData.active"
-						heading="Strompreis:"
+						heading="Preisladen:"
 						class="grid-col-4 grid-left"
 					>
-						<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
+						<SwitchInput v-model="cp.etActive" />
 					</InfoItem>
-					<InfoItem v-if="cp.etActive" heading="max. Preis:" class="grid-col-4">
+					<InfoItem
+						v-if="etData.active"
+						heading="max. Preis:"
+						class="grid-col-4"
+					>
 						<span type="button" @click="editPrice = !editPrice"
 							>{{
 								props.chargepoint.etActive
@@ -228,12 +231,18 @@
 										).toFixed(1) + ' ct'
 									: '-'
 							}}
-
 							<i
 								v-if="props.chargepoint.etActive"
 								class="fa-solid fa-sm fas fa-edit ms-2"
 							/>
 						</span>
+					</InfoItem>
+					<InfoItem
+						v-if="etData.active"
+						heading="akt. Preis:"
+						class="grid-col-4 grid-right"
+					>
+						<span :style="currentPriceStyle">{{ currentPrice }} ct </span>
 					</InfoItem>
 
 					<div
@@ -301,7 +310,7 @@ import { updateServer } from '@/assets/js/sendMessages'
 import RangeInput from '../shared/RangeInput.vue'
 import PriceChart from '../priceChart/PriceChart.vue'
 import { etData } from '../priceChart/model'
-//import SwitchInput from '../shared/SwitchInput.vue'
+import SwitchInput from '../shared/SwitchInput.vue'
 
 const props = defineProps<{
 	chargepoint: ChargePoint
@@ -314,7 +323,6 @@ const chargeMode = computed({
 		return props.chargepoint.chargeMode
 	},
 	set(newMode) {
-		console.log('set mode')
 		chargePoints[props.chargepoint.id].chargeMode = newMode
 	},
 })

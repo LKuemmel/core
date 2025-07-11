@@ -39,9 +39,6 @@ export default {
         "openWB/chargepoint/+/config",
         "openWB/chargepoint/+/get/charge_state",
         "openWB/chargepoint/+/get/connected_vehicle/+",
-        "openWB/chargepoint/+/set/charge_template",
-        "openWB/chargepoint/+/set/charge_template/chargemode/scheduled_charging/plans/+",
-        "openWB/chargepoint/+/set/charge_template/time_charging/plans/+",
         "openWB/chargepoint/+/get/phases_in_use",
         "openWB/chargepoint/+/get/plug_state",
         "openWB/chargepoint/+/get/power",
@@ -54,8 +51,11 @@ export default {
         "openWB/counter/+/get/power",
         "openWB/counter/get/hierarchy",
         "openWB/counter/set/home_consumption",
+<<<<<<< HEAD
         "openWB/optional/et/provider",
         "openWB/optional/et/get/prices",
+=======
+>>>>>>> parent of 8df44b81a (Feature simplify chargemode (#2276))
         "openWB/optional/int_display/theme",
         "openWB/optional/int_display/standby",
         "openWB/optional/rfid/active",
@@ -69,6 +69,7 @@ export default {
         "openWB/vehicle/+/get/fault_state",
         "openWB/vehicle/+/name",
         "openWB/vehicle/+/soc_module/config",
+        "openWB/vehicle/template/charge_template/#",
       ],
       mqttStore: useMqttStore(),
       chartInterval: "",

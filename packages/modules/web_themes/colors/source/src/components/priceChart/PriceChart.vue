@@ -1,4 +1,5 @@
 <template>
+	<p class="settingsheader mt-2 ms-1">Preisbasiertes Laden:</p>
 	<p class="providername ms-1">Anbieter: {{ etData.etProvider }}</p>
 	<hr />
 	<div class="container">
@@ -14,6 +15,7 @@
 	</div>
 	<div v-if="chargepoint != undefined" class="p-3">
 		<RangeInput
+			v-if="chargepoint.etActive"
 			id="pricechart_local"
 			v-model="maxPrice"
 			:min="Math.floor(prices[0] - 1)"
@@ -38,7 +40,7 @@
 		<span class="me-3 pt-0" @click="setMaxPrice">
 			<button
 				type="button"
-				class="btn btn-secondary confirmButton"
+				class="btn btn-secondary"
 				:style="confirmButtonStyle"
 				:disabled="!maxPriceEdited"
 			>
@@ -317,9 +319,5 @@ onMounted(() => {
 	background-color: var(--color-menu);
 	color: var(--color-bg);
 	border: 0;
-	font-size: var(--font-settings-button);
-}
-.confirmButton {
-	font-size: var(--font-settings-button);
 }
 </style>

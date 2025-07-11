@@ -172,7 +172,11 @@ export const dayGraph = reactive({
 			graphData.waitForData = true
 			sendCommand({
 				command: 'getDailyLog',
+<<<<<<< HEAD
 				data: { date: dateString },
+=======
+				data: { date: dateString, day: dateString },
+>>>>>>> parent of 8df44b81a (Feature simplify chargemode (#2276))
 			})
 		}
 	},
@@ -208,7 +212,11 @@ export const monthGraph = reactive({
 		graphData.waitForData = true
 		sendCommand({
 			command: 'getMonthlyLog',
+<<<<<<< HEAD
 			data: { date: dateString },
+=======
+			data: { date: dateString, month: dateString },
+>>>>>>> parent of 8df44b81a (Feature simplify chargemode (#2276))
 		})
 	},
 	deactivate() {
@@ -256,7 +264,11 @@ export const yearGraph = reactive({
 		graphData.waitForData = true
 		sendCommand({
 			command: 'getYearlyLog',
+<<<<<<< HEAD
 			data: { date: dateString },
+=======
+			data: { date: dateString, year: dateString },
+>>>>>>> parent of 8df44b81a (Feature simplify chargemode (#2276))
 		})
 	},
 	deactivate() {
@@ -360,7 +372,9 @@ export function updateEnergyValues(
 				historicSummary.items.evuOut.energy += values.energy_exported
 			}
 		})
-		historicSummary.items.pv.energy = totals.pv.all.energy_exported
+		if (Object.entries(totals.pv).length > 0) {
+			historicSummary.items.pv.energy = totals.pv.all.energy_exported
+		}
 		if (totals.bat.all) {
 			historicSummary.items.batIn.energy = totals.bat.all.energy_imported
 			historicSummary.items.batOut.energy = totals.bat.all.energy_exported

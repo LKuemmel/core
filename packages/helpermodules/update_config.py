@@ -1,4 +1,3 @@
-import copy
 from dataclasses import asdict
 import datetime
 import glob
@@ -18,7 +17,6 @@ from control.chargepoint.chargepoint_template import get_chargepoint_template_de
 from helpermodules import timecheck
 from helpermodules import hardware_configuration
 from helpermodules.broker import BrokerClient
-from helpermodules.abstract_plans import Limit
 from helpermodules.constants import NO_ERROR
 from helpermodules.hardware_configuration import (
     get_hardware_configuration_setting,
@@ -36,7 +34,7 @@ from control import counter_all
 from control.bat_all import BatConsiderationMode
 from control.chargepoint.charging_type import ChargingType
 from control.counter import get_counter_default_config
-from control.ev.charge_template import EcoCharging, get_charge_template_default
+from control.ev.charge_template import get_charge_template_default
 from control.ev import ev
 from control.ev.ev_template import EvTemplateData
 from control.general import ChargemodeConfig, Prices
@@ -106,7 +104,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/control_parameter/state$",
         "^openWB/chargepoint/[0-9]+/control_parameter/submode$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_charge_start$",
-        "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_chargemode_changed$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_last_phase_switch$",
         "^openWB/chargepoint/[0-9]+/control_parameter/timestamp_switch_on_off$",
         "^openWB/chargepoint/[0-9]+/get/charge_state$",
@@ -142,9 +139,6 @@ class UpdateConfig:
         "^openWB/chargepoint/[0-9]+/get/rfid$",
         "^openWB/chargepoint/[0-9]+/get/rfid_timestamp$",
         "^openWB/chargepoint/[0-9]+/set/charging_ev$",
-        "^openWB/chargepoint/[0-9]+/set/charge_template/time_charging/plans/[0-9]+$",
-        "^openWB/chargepoint/[0-9]+/set/charge_template/chargemode/scheduled_charging/plans/[0-9]+$",
-        "^openWB/chargepoint/[0-9]+/set/charge_template$",
         "^openWB/chargepoint/[0-9]+/set/current$",
         "^openWB/chargepoint/[0-9]+/set/energy_to_charge$",
         "^openWB/chargepoint/[0-9]+/set/manual_lock$",
@@ -231,12 +225,17 @@ class UpdateConfig:
         "^openWB/general/chargemode_config/pv_charging/switch_off_delay$",
         "^openWB/general/chargemode_config/phase_switch_delay$",
         "^openWB/general/chargemode_config/pv_charging/control_range$",
+        "^openWB/general/chargemode_config/pv_charging/phases_to_use$",
         "^openWB/general/chargemode_config/pv_charging/min_bat_soc$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_discharge$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_discharge_active$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_reserve$",
         "^openWB/general/chargemode_config/pv_charging/bat_power_reserve_active$",
         "^openWB/general/chargemode_config/retry_failed_phase_switches$",
+        "^openWB/general/chargemode_config/scheduled_charging/phases_to_use$",
+        "^openWB/general/chargemode_config/scheduled_charging/phases_to_use_pv$",
+        "^openWB/general/chargemode_config/instant_charging/phases_to_use$",
+        "^openWB/general/chargemode_config/time_charging/phases_to_use$",
         # obsolet, Daten hieraus müssen nach prices/ überführt werden
         "^openWB/general/price_kwh$",
         "^openWB/general/prices/bat$",
@@ -520,16 +519,17 @@ class UpdateConfig:
         ("openWB/counter/config/home_consumption_source_id", counter_all.Config().home_consumption_source_id),
         ("openWB/vehicle/0/name", "Standard-Fahrzeug"),
         ("openWB/vehicle/0/info", {"manufacturer": None, "model": None}),
-        ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.data.id),
+        ("openWB/vehicle/0/charge_template", ev.Ev(0).charge_template.ct_num),
         ("openWB/vehicle/0/soc_module/config", NO_MODULE),
         ("openWB/vehicle/0/soc_module/general_config", dataclass_utils.asdict(GeneralVehicleConfig())),
-        ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.data.id),
+        ("openWB/vehicle/0/ev_template", ev.Ev(0).ev_template.et_num),
         ("openWB/vehicle/0/tag_id", ev.Ev(0).data.tag_id),
         ("openWB/vehicle/0/get/soc", ev.Ev(0).data.get.soc),
         ("openWB/vehicle/template/ev_template/0", asdict(EvTemplateData(name="Standard-Fahrzeug-Profil",
                                                                         min_current=10))),
         ("openWB/vehicle/template/charge_template/0", get_charge_template_default()),
         ("openWB/general/charge_log_data_config", get_default_charge_log_columns()),
+        ("openWB/general/chargemode_config/instant_charging/phases_to_use", 3),
         ("openWB/general/chargemode_config/pv_charging/bat_mode", BatConsiderationMode.EV_MODE.value),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge", 1000),
         ("openWB/general/chargemode_config/pv_charging/bat_power_discharge_active", True),
@@ -543,8 +543,12 @@ class UpdateConfig:
         ("openWB/general/chargemode_config/pv_charging/switch_on_threshold", 1500),
         ("openWB/general/chargemode_config/pv_charging/feed_in_yield", 0),
         ("openWB/general/chargemode_config/phase_switch_delay", 7),
+        ("openWB/general/chargemode_config/pv_charging/phases_to_use", 0),
         ("openWB/general/chargemode_config/retry_failed_phase_switches",
-         ChargemodeConfig().retry_failed_phase_switches),
+            ChargemodeConfig().retry_failed_phase_switches),
+        ("openWB/general/chargemode_config/scheduled_charging/phases_to_use", 0),
+        ("openWB/general/chargemode_config/scheduled_charging/phases_to_use_pv", 0),
+        ("openWB/general/chargemode_config/time_charging/phases_to_use", 1),
         ("openWB/general/chargemode_config/unbalanced_load", False),
         ("openWB/general/chargemode_config/unbalanced_load_limit", 18),
         ("openWB/general/control_interval", 10),
@@ -916,7 +920,7 @@ class UpdateConfig:
             if re.search("openWB/vehicle/template/ev_template/[0-9]+$", topic) is not None:
                 payload = decode_payload(payload)
                 if "keep_charge_active_duration" not in payload:
-                    payload["keep_charge_active_duration"] = EvTemplateData().keep_charge_active_duration
+                    payload["keep_charge_active_duration"] = ev.EvTemplateData().keep_charge_active_duration
                     return {topic: payload}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 8)

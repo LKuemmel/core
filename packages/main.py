@@ -71,20 +71,8 @@ class HandlerAlgorithm:
                 else:
                     self.interval_counter = self.interval_counter + 1
             log.info("# ***Start*** ")
-            log.debug(run_command.run_shell_command("top -b -n 1 | head -n 20"))
             log.debug(f'Drosselung: {run_command.run_shell_command("vcgencmd get_throttled")}')
-            log.debug(f"Threads: {enumerate()}")
-            for thread in enumerate():
-                logging.debug(f"Thread Name: {thread.name}")
-                if hasattr(thread, "ident"):
-                    thread_id = thread.ident
-                    for tid, frame in sys._current_frames().items():
-                        if tid == thread_id:
-                            logging.debug(f"  File: {frame.f_code.co_filename}, Line: {frame.f_lineno}, Function: {frame.f_code.co_name}")
-                            stack_trace = traceback.format_stack(frame)
-                            logging.debug("  Stack Trace:")
-                            for line in stack_trace:
-                                logging.debug(line.strip())
+            log.debug(f"Threads: {threading.enumerate()}")
             Pub().pub("openWB/set/system/time", timecheck.create_timestamp())
             handler_with_control_interval()
         except KeyboardInterrupt:
@@ -212,8 +200,14 @@ try:
     rfid = RfidReader()
     event_ev_template = threading.Event()
     event_ev_template.set()
+    event_charge_template = threading.Event()
+    event_charge_template.set()
     event_cp_config = threading.Event()
     event_cp_config.set()
+    event_scheduled_charging_plan = threading.Event()
+    event_scheduled_charging_plan.set()
+    event_time_charging_plan = threading.Event()
+    event_time_charging_plan.set()
     event_soc = threading.Event()
     event_soc.set()
     event_copy_data = threading.Event()  # set: Kopieren abgeschlossen, reset: es wird kopiert
@@ -231,13 +225,14 @@ try:
     gpio = InternalGpioHandler(event_restart_gpio)
     prep = prepare.Prepare()
     soc = update_soc.UpdateSoc(event_update_soc)
-    set = setdata.SetData(event_ev_template,
-                          event_cp_config, event_soc,
+    set = setdata.SetData(event_ev_template, event_charge_template,
+                          event_cp_config, event_scheduled_charging_plan, event_time_charging_plan, event_soc,
                           event_subdata_initialized)
-    sub = subdata.SubData(event_ev_template,
+    sub = subdata.SubData(event_ev_template, event_charge_template,
                           event_cp_config, loadvars_.event_module_update_completed,
                           event_copy_data, event_global_data_initialized, event_command_completed,
                           event_subdata_initialized, soc.event_vehicle_update_completed,
+                          event_scheduled_charging_plan, event_time_charging_plan,
                           general_internal_chargepoint_handler.event_start,
                           general_internal_chargepoint_handler.event_stop,
                           event_update_config_completed,

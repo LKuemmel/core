@@ -81,8 +81,11 @@ cases = [
 
 
 @pytest.mark.parametrize("params", cases, ids=[c.name for c in cases])
-def test_get_phases_by_selected_chargemode(cp: Chargepoint, params: Params):
+def test_get_phases_by_selected_chargemode(monkeypatch, cp: Chargepoint, params: Params):
     # setup
+    mock_chargemode_phases = Mock(name="chargemode_phases", return_value=params.chargemode_phases)
+    monkeypatch.setattr(data.data.general_data, "get_phases_chargemode", mock_chargemode_phases)
+
     cp.data.config.connected_phases = params.connected_phases
     cp.data.config.auto_phase_switch_hw = params.auto_phase_switch_hw
     cp.data.get.charge_state = params.charge_state
@@ -95,7 +98,7 @@ def test_get_phases_by_selected_chargemode(cp: Chargepoint, params: Params):
     cp.data.control_parameter.phases = params.phases_in_use
 
     # execution
-    phases = cp.get_phases_by_selected_chargemode(params.chargemode_phases)
+    phases = cp.get_phases_by_selected_chargemode()
 
     # evaluation
     assert phases == params.expected_phases

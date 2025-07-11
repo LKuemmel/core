@@ -34,3 +34,4 @@ class EvTemplate:
 
     data: EvTemplateData = field(default_factory=ev_template_data_factory, metadata={
                                  "topic": "config"})
+    et_num: int = 0

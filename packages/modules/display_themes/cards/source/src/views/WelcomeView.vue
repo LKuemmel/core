@@ -8,13 +8,32 @@ export default {
       mqttStore: useMqttStore(),
     };
   },
+  computed: {
+    firstView() {
+      if (this.mqttStore.getThemeConfiguration) {
+        if (this.mqttStore.getThemeConfiguration.enable_dashboard_view) {
+          return "dash-board";
+        }
+        if (this.mqttStore.getThemeConfiguration.enable_energy_flow_view) {
+          return "energy-flow";
+        }
+        if (this.mqttStore.getThemeConfiguration.enable_charge_points_view) {
+          return "charge-points";
+        }
+        if (this.mqttStore.getThemeConfiguration.enable_status_view) {
+          return "status";
+        }
+      }
+      return undefined;
+    },
+  },
   mounted() {
     setTimeout(this.selectFirstRoute, 3000);
   },
   methods: {
     selectFirstRoute() {
-      if (this.mqttStore.getDefaultView) {
-        this.$router.push({ name: this.mqttStore.getDefaultView });
+      if (this.firstView) {
+        this.$router.push({ name: this.firstView });
       } else {
         console.warn("no router view enabled, check your configuration!");
       }
