@@ -31,10 +31,10 @@ class ChargepointModule(AbstractChargepoint):
                  hierarchy_id: int) -> None:
         self.local_charge_point_num = local_charge_point_num
         self.fault_state = FaultState(ComponentInfo(
-            local_charge_point_num,
+            hierarchy_id,
             "Ladepunkt "+str(local_charge_point_num),
             "internal_chargepoint",
-            hierarchy_id=hierarchy_id,
+            parent_id=internal_cp.data.parent_cp,
             parent_hostname=parent_hostname))
         self.store_internal = get_internal_chargepoint_value_store(local_charge_point_num)
         self.store = get_chargepoint_value_store(hierarchy_id)

@@ -32,16 +32,17 @@ class ChargepointModule(AbstractChargepoint):
             f"openWB/set/chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
 
         with SingleComponentUpdateContext(self.fault_state, update_always=False):
-            self.__session.post(
-                'http://' + self.config.configuration.ip_address + '/connect.php',
-                data={'heartbeatenabled': '1'})
+            with self.client_error_context:
+                self.__session.post(
+                    'http://' + self.config.configuration.ip_address + '/connect.php',
+                    data={'heartbeatenabled': '1'})
 
-    def set_internal_context_handlers(self, hierarchy_id: int, internal_cp: InternalChargepoint, parent_hostname: str):
+    def set_internal_context_handlers(self, internal_cp: InternalChargepoint, parent_hostname: str):
         self.fault_state = FaultState(ComponentInfo(
             self.config.id,
             "Ladepunkt "+str(self.config.id),
             "internal_chargepoint",
-            hierarchy_id=hierarchy_id,
+            parent_id=internal_cp.data.parent_cp,
             parent_hostname=parent_hostname))
         self.client_error_context = ErrorTimerContext(
             f"openWB/set/internal_chargepoint/{self.config.id}/get/error_timestamp", CP_ERROR, hide_exception=True)
