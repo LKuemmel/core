@@ -4,8 +4,6 @@ from helpermodules import timecheck
 
 from helpermodules.auto_str import auto_str
 
-log = logging.getLogger(__name__)
-
 
 def _check_none(values: Optional[List[Optional[Union[int, float]]]]) -> bool:
     """Check if values is None or [None, None, None]
@@ -68,11 +66,6 @@ class BatState:
         self.exported = exported
         self.power = power
         self.soc = soc
-        if _check_none(currents):
-            currents = [0.0]*3
-        else:
-            if not ((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
-                log.debug("currents sign wrong "+str(currents))
         self.currents = currents
 
 
@@ -130,9 +123,6 @@ class InverterState:
         """
         if _check_none(currents):
             currents = [0.0]*3
-        else:
-            if not ((sum(currents) < 0 and power < 0) or (sum(currents) > 0 and power > 0)):
-                log.debug("currents sign wrong "+str(currents))
         self.currents = currents
         self.power = power
         self.exported = exported
@@ -154,7 +144,6 @@ class CarState:
             self.soc_timestamp = timecheck.create_timestamp()
         else:
             if soc_timestamp > 1e10:  # Convert soc_timestamp to seconds if it is in milliseconds
-                log.debug(f'Zeitstempel {soc_timestamp} ist in ms, wird in s gewandelt. Modul sollte angepasst werden.')
                 soc_timestamp /= 1000
             self.soc_timestamp = soc_timestamp
 

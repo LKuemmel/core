@@ -12,8 +12,6 @@ with ImportErrorContext():
 from modules.backup_clouds.samba.config import SambaBackupCloud, SambaBackupCloudConfiguration
 from modules.common.abstract_device import DeviceDescriptor
 
-log = logging.getLogger(__name__)
-
 
 def is_port_open(host: str, port: int):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -34,8 +32,6 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
     host_is_reachable = is_port_open(config.smb_server, 139)
 
     if found_invalid_chars:
-        log.warn("Folgenden ungültige Zeichen im Pfad gefunden: {}".format(found_invalid_chars.group()))
-        log.warn("Sicherung nicht erfolgreich.")
         send_file = False
     else:
         send_file = True
@@ -50,10 +46,6 @@ def upload_backup(config: SambaBackupCloudConfiguration, backup_filename: str, b
             log.error(error.__str__().split('\n')[0])
             log.error("Möglicherweise ist die Freigabe oder ein Unterordner nicht vorhanden.")
         conn.close()
-    elif send_file:
-        log.warn("SMB Verbindungsaufbau fehlgeschlagen.")
-    elif not host_is_reachable:
-        log.warn("Host {} und/oder Port 139 nicht zu erreichen.".format(config.smb_server))
 
 
 def create_backup_cloud(config: SambaBackupCloud):

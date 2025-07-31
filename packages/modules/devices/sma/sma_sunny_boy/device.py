@@ -15,8 +15,6 @@ from modules.devices.sma.sma_sunny_boy.config import (SmaSunnyBoy, SmaSunnyBoyBa
 from modules.devices.sma.sma_sunny_boy.counter import SmaSunnyBoyCounter
 from modules.devices.sma.sma_sunny_boy.inverter import SmaSunnyBoyInverter
 
-log = logging.getLogger(__name__)
-
 
 sma_modbus_tcp_component_classes = Union[
     SunnyBoyBat,

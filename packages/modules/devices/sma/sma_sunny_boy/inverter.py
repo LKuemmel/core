@@ -13,8 +13,6 @@ from modules.devices.sma.sma_sunny_boy.config import SmaSunnyBoyInverterSetup
 from modules.devices.sma.sma_sunny_boy.inv_version import SmaInverterVersion
 from modules.common.simcount import SimCounter
 
-log = logging.getLogger(__name__)
-
 
 class KwargsDict(TypedDict):
     client: modbus.ModbusTcpClient_
@@ -99,7 +97,6 @@ class SmaSunnyBoyInverter(AbstractInverter):
             exported=energy,
             imported=imported
         )
-        log.debug("WR {}: {}".format(self.tcp_client.address, inverter_state))
         return inverter_state
 
 

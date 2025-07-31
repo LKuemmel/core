@@ -16,8 +16,6 @@ from modules.vehicles.mqtt.config import MqttSocSetup
 
 T_VEHICLE_CONFIG = TypeVar("T_VEHICLE_CONFIG")
 
-log = logging.getLogger(__name__)
-
 
 class SocSource(Enum):
     API = "api"
@@ -60,24 +58,17 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
         try:
             self.__initializer()
         except Exception:
-            log.exception(f"Initialisierung von Fahrzeug {self.vehicle_config.name} fehlgeschlagen")
+            pass
 
     def update(self, vehicle_update_data: VehicleUpdateData):
-        log.debug(f"Vehicle Instance {type(self.vehicle_config)}")
-        log.debug(f"Calculated SoC-State {self.calculated_soc_state}")
-        log.debug(f"Vehicle Update Data {vehicle_update_data}")
-        log.debug(f"General Config {self.general_config}")
         with SingleComponentUpdateContext(self.fault_state, self.__initializer):
 
             source = self._get_carstate_source(vehicle_update_data)
             if source == SocSource.NO_UPDATE:
-                log.debug("No soc update necessary.")
                 return
             car_state = self._get_carstate_by_source(vehicle_update_data, source)
             if isinstance(self.vehicle_config, MqttSocSetup) and car_state is None:
-                log.debug("Mqtt uses legacy topics.")
                 return
-            log.debug(f"Requested start soc from {source.value}: {car_state.soc}%")
 
             if (source != SocSource.CALCULATION or
                     (vehicle_update_data.imported and self.calculated_soc_state.imported_start is None)):
@@ -96,8 +87,6 @@ class ConfigurableVehicle(Generic[T_VEHICLE_CONFIG]):
             elif vehicle_update_data.soc_timestamp > 1e10:
                 # car_state ist in ms geschrieben, dieser kann überschrieben werden
                 self.store.set(car_state)
-            else:
-                log.debug("Not updating SoC, because timestamp is older.")
 
     def _get_carstate_source(self, vehicle_update_data: VehicleUpdateData) -> SocSource:
         # Kein SoC vom LP vorhanden oder erwünscht

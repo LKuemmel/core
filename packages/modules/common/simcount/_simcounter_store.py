@@ -12,8 +12,6 @@ from modules.common.simcount.simcounter_state import SimCounterState
 POSTFIX_EXPORT = "watt0neg"
 POSTFIX_IMPORT = "watt0pos"
 
-log = logging.getLogger(__name__)
-
 
 class SimCounterStore:
     @abstractmethod

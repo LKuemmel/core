@@ -7,7 +7,6 @@ from modules.common.component_state import CarState
 from modules.common import req
 from modules.vehicles.renault.config import RenaultConfiguration
 
-log = logging.getLogger(__name__)
 
 GIGYA_ROOTURL = 'https://accounts.eu1.gigya.com'
 GIGYA_API = '3_7PLksOyBRkHv126x5WhHb-5pqC1qFR8pQjxSeLB6nhAnPERTUlwnYoznHSxwX668'
@@ -42,7 +41,6 @@ def fetch_soc(config: RenaultConfiguration) -> CarState:
     # Step 6 - skipped
     # Step 7 - vehicles
     kamereonaccountid = kamereon_per['accounts'][0]['accountId']
-    log.debug(f"account id {kamereonaccountid}")
     # vehic = req.get_http_session().get(f"{KAMEREON_ROOTURL}/commerce/v1/accounts/{kamereonaccountid}/vehicles",
     #                                    headers={'x-gigya-id_token': gigya_jwttoken, 'apikey': KAMEREON_API_KEY},
     #                                    data=country_data).json()

@@ -5,7 +5,6 @@ from typing import Generic, TypeVar
 from modules.common.component_context import SingleComponentUpdateContext
 
 T = TypeVar("T")
-log = logging.getLogger(__name__)
 
 
 class ValueStore(Generic[T]):
@@ -23,18 +22,16 @@ class LoggingValueStore(Generic[T], ValueStore[T]):
         self.delegate = delegate
 
     def set(self, state: T) -> None:
-        log.debug("Raw data %s", state)
         self.delegate.set(state)
 
     def update(self) -> None:
         try:
-            log.info("Saving %s", self.delegate.state)
             self.delegate.update()
         except AttributeError:
             # Wenn keine Daten ausgelesen werden, fehlt das state-Attribut.
             pass
         except Exception:
-            log.exception("Error while publishing module data")
+            pass
 
 
 def update_values(component):

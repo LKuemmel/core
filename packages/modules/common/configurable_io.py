@@ -11,7 +11,6 @@ from modules.common.fault_state import ComponentInfo, FaultState
 
 
 T_IO_CONFIG = TypeVar("T_IO_CONFIG")
-log = logging.getLogger(__name__)
 
 
 class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
@@ -39,7 +38,6 @@ class ConfigurableIo(Generic[T_IO_CONFIG], AbstractIoDevice):
 
     def update_manual_output(self, manual: Dict[str, bool], output: Dict[str, bool], string: str, topic_suffix: str):
         if len(manual) > 0:
-            log.debug(f"Manuell gesetzte {string} Ausgänge: {manual}")
             for manual_out_pin, manual_out_value in manual.items():
                 output[manual_out_pin] = manual_out_value
                 # nur die in diesem Zyklus gesetzten manuellen Ausgänge setzen, für nächsten Zyklus zurücksetzen

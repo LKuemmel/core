@@ -10,8 +10,6 @@ from modules.common.component_state import IoState
 from modules.common.configurable_io import ConfigurableIo
 from modules.io_devices.add_on.config import AddOn
 
-log = logging.getLogger(__name__)
-
 
 def create_io(config: AddOn):
     def read() -> Tuple[bool, bool]:

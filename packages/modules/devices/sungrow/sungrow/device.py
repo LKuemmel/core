@@ -10,8 +10,6 @@ from modules.devices.sungrow.sungrow.config import Sungrow, SungrowBatSetup, Sun
 from modules.devices.sungrow.sungrow.counter import SungrowCounter
 from modules.devices.sungrow.sungrow.inverter import SungrowInverter
 
-log = logging.getLogger(__name__)
-
 
 def create_device(device_config: Sungrow):
     client = None

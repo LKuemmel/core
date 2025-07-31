@@ -5,8 +5,6 @@ import urllib3
 from functools import wraps
 import warnings
 
-log = logging.getLogger(__name__)
-
 
 def disable_insecure_request_warning(func):
     @wraps(func)

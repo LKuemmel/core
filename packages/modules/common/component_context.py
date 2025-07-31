@@ -5,8 +5,6 @@ from helpermodules.constants import NO_ERROR
 
 from modules.common.fault_state import ComponentInfo, FaultState, FaultStateLevel
 
-log = logging.getLogger(__name__)
-
 
 class SingleComponentUpdateContext:
     """ Wenn die Werte der Komponenten nicht miteinander verrechnet werden, sollen, auch wenn bei einer Komponente ein
@@ -26,7 +24,6 @@ class SingleComponentUpdateContext:
         self.reraise = reraise
 
     def __enter__(self):
-        log.debug("Update Komponente ['"+self.__fault_state.component_info.name+"']")
         if self.update_always:
             self.__fault_state.no_error()
         return None
@@ -59,8 +56,6 @@ class MultiComponentUpdateContext:
         if hasattr(self.__thread_local, "active_context"):
             raise Exception("Nesting MultiComponentUpdateContext is not supported")
         MultiComponentUpdateContext.__thread_local.active_context = self
-        log.debug("Update Komponenten " +
-                  str([component.fault_state.component_info.name for component in self.__device_components]))
         for component in self.__device_components:
             component.fault_state.fault_state = FaultStateLevel.NO_ERROR
             component.fault_state.fault_str = NO_ERROR

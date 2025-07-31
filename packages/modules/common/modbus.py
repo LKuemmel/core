@@ -17,8 +17,6 @@ from pymodbus.payload import BinaryPayloadDecoder
 from pymodbus.transaction import ModbusSocketFramer
 from urllib3.util import parse_url
 
-log = logging.getLogger(__name__)
-
 
 class ModbusDataType(Enum):
     UINT_8 = 8, "decode_8bit_uint"
@@ -75,7 +73,6 @@ class ModbusClient:
 
     def close(self) -> None:
         try:
-            log.debug("Close Modbus TCP connection")
             self._delegate.close()
         except Exception as e:
             raise Exception(__name__+" "+str(type(e))+" " + str(e)) from e

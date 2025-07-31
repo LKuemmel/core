@@ -14,8 +14,6 @@ from modules.common.component_state import ChargepointState
 from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.store._chargepoint import get_chargepoint_value_store
 
-log = logging.getLogger(__name__)
-
 
 class ChargepointModule(AbstractChargepoint):
     def __init__(self, config: OpenWBSeries) -> None:
@@ -79,7 +77,6 @@ class ChargepointModule(AbstractChargepoint):
                              port=1883).start_finite_loop()
 
                 if received_topics:
-                    log.debug(f"Empfange MQTT Daten für Ladepunkt {self.config.id}: {received_topics}")
                     topic_prefix = f"openWB/internal_chargepoint/{self.config.configuration.duo_num}/get/"
                     chargepoint_state = ChargepointState(
                         power=received_topics.get(f"{topic_prefix}power"),

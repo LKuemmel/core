@@ -16,8 +16,6 @@ T_COMPONENT_CONFIG = TypeVar("T_COMPONENT_CONFIG")
 ComponentUpdater = Callable[[Iterable[T_COMPONENT]], None]
 ComponentFactory = Callable[[T_COMPONENT_CONFIG], T_COMPONENT]
 
-log = logging.getLogger(__name__)
-
 
 class IndependentComponentUpdater(Generic[T_COMPONENT]):
     def __init__(self, updater: Callable[[T_COMPONENT], None]):
@@ -87,21 +85,14 @@ class ConfigurableDevice(Generic[T_COMPONENT, T_DEVICE_CONFIG, T_COMPONENT_CONFI
         try:
             self.__initializer()
         except Exception:
-            log.exception(f"Initialisierung von Gerät {self.device_config.name} fehlgeschlagen")
+            pass
 
     def error_handler(self) -> None:
         if self.error_timestamp is None:
             self.error_timestamp = timecheck.create_timestamp()
             Pub().pub(f"openWB/set/system/device/{self.device_config.id}/error_timestamp", self.error_timestamp)
-            log.debug(
-                f"Fehler bei Gerät {self.device_config.name} aufgetreten, Fehlerzeitstempel: {self.error_timestamp}")
         if timecheck.check_timestamp(self.error_timestamp, 60) is False:
-            try:
-                self.__error_handler()
-            except Exception:
-                log.exception(f"Fehlerbehandlung für Gerät {self.device_config.name} fehlgeschlagen")
-            else:
-                log.debug(f"Fehlerbehandlung für Gerät {self.device_config.name} wurde durchgeführt.")
+            self.__error_handler()
 
             self.error_timestamp = None
             Pub().pub(self.topic, self.error_timestamp)

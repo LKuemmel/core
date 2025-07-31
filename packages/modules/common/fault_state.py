@@ -8,8 +8,6 @@ from modules.common import component_type
 from modules.common.component_setup import ComponentSetup
 from modules.common.fault_state_level import FaultStateLevel
 
-log = logging.getLogger(__name__)
-
 
 class ComponentInfo:
     def __init__(self,
@@ -41,11 +39,6 @@ class FaultState(Exception):
 
     def store_error(self) -> None:
         try:
-            if self.fault_state != FaultStateLevel.NO_ERROR:
-                log.error(self.component_info.name + ": FaultState " +
-                          str(self.fault_state) + ", FaultStr " +
-                          self.fault_str + ", Traceback: \n" +
-                          traceback.format_exc())
             topic = component_type.type_to_topic_mapping(self.component_info.type)
             if self.component_info.type == component_type.ComponentType.ELECTRICITY_TARIFF.value:
                 topic_prefix = f"openWB/set/{topic}"
@@ -59,7 +52,7 @@ class FaultState(Exception):
                 pub.pub_single(f"openWB/set/chargepoint/{self.component_info.hierarchy_id}/get/fault_state",
                                self.fault_state.value)
         except Exception:
-            log.exception("Fehler im Modul fault_state")
+            pass
 
     def error(self, message: str) -> None:
         self.fault_str = message
