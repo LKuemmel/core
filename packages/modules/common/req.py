@@ -48,5 +48,4 @@ class CustomSession(Session):
 def get_http_session() -> CustomSession:
     session = CustomSession()
     session.hooks['response'].append(lambda r, *args, **kwargs: r.raise_for_status())
-    session.hooks['response'].append(lambda r, *args, **kwargs: log.debug("Get-Response: " + r.text))
     return session
