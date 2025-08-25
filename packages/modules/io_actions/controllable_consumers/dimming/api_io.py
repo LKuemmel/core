@@ -1,10 +1,10 @@
 import logging
+
 from control import data
 from helpermodules.logger import ModifyLoglevelContext
 from helpermodules.pub import Pub
 from helpermodules.timecheck import create_timestamp
 from dataclass_utils import asdict
-from modules.common.abstract_device import DeviceDescriptor
 from modules.common.abstract_io import AbstractIoAction
 from modules.io_actions.controllable_consumers.dimming.config import DimmingSetup
 

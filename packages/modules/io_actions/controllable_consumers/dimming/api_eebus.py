@@ -1,13 +1,12 @@
 import logging
 from control import data
-from helpermodules.broker import BrokerClient
 from helpermodules.logger import ModifyLoglevelContext
 from helpermodules.pub import Pub
 from helpermodules.timecheck import create_timestamp
 from dataclass_utils import asdict
-from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_io import AbstractIoAction
 from modules.io_actions.controllable_consumers.dimming.config import DimmingSetup
+from modules.io_devices.eebus.config import AnalogInputMapping, DigitalInputMapping
 
 log = logging.getLogger(__name__)
 control_command_log = logging.getLogger("steuve_control_command")
@@ -17,10 +16,7 @@ class DimmingEebus(AbstractIoAction):
     def __init__(self, config: DimmingSetup):
         self.config = config
         self.import_power_left = None
-        # if binary thread running:
-        #     control_command_log.info(f"Dimmen per EMS: Steuerbox-Signale werden über EEbus empfangen.")
-        # else:
-        #     control_command_log.warning("Dimmen per EMS: Steuerbox-Signale können nicht über EEbus empfangen werden.")
+        control_command_log.info("Dimmen per EMS: Steuerbox-Signale werden über EEbus empfangen.")
 
         fixed_import_power = 0
         for device in self.config.configuration.devices:
@@ -34,26 +30,18 @@ class DimmingEebus(AbstractIoAction):
         super().__init__()
 
     def setup(self) -> None:
+        lpc_value = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                        ].data.get.analog_input[AnalogInputMapping.VALUE.name]
         surplus = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].calc_raw_surplus()
         if surplus > 0:
-            self.import_power_left = self.received_topics["openWB/mqtt/eebus/get/lpc/value"] + surplus
+            self.import_power_left = lpc_value + surplus
         else:
-            self.import_power_left = self.received_topics["openWB/mqtt/eebus/get/lpc/value"]
+            self.import_power_left = lpc_value
         self.import_power_left -= self.config.configuration.fixed_import_power
         log.debug(f"Dimmen: {self.import_power_left}W inkl. Überschuss")
 
-        def on_connect(client, userdata, flags, rc):
-            client.subscribe(f"openWB/mqtt/eebus/get/lpc/+")
-
-        def on_message(client, userdata, message):
-            self.received_topics.update({message.topic: decode_payload(message.payload)})
-
-        self.received_topics = {}
-        BrokerClient(f"subscribeMqttEebusAction",
-                     on_connect, on_message).start_finite_loop()
-
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
-            if self.received_topics["openWB/mqtt/eebus/get/lpc/active"]:
+            if self.dimming_active():
                 if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                     control_command_log.info("Dimmen aktiviert. Leistungswerte vor Ausführung des Steuerbefehls:")
@@ -86,4 +74,5 @@ class DimmingEebus(AbstractIoAction):
         return self.import_power_left
 
     def dimming_active(self) -> bool:
-        return self.received_topics["openWB/mqtt/eebus/get/lpc/active"]
+        return data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                   ].data.get.digital_input[DigitalInputMapping.ACTIVE.name]
