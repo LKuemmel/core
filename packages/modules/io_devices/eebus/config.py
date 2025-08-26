@@ -6,6 +6,7 @@ from modules.common.io_setup import IoDeviceSetup
 
 class AnalogInputMapping(Enum):
     VALUE = "value"
+    MSG_COUNTER = "msg_counter"
 
 
 class DigitalInputMapping(Enum):
