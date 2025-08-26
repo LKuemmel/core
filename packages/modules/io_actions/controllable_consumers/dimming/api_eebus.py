@@ -31,7 +31,7 @@ class DimmingEebus(AbstractIoAction):
 
     def setup(self) -> None:
         lpc_value = data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                        ].data.get.analog_input[AnalogInputMapping.VALUE.name]
+                                        ].data.get.analog_input[AnalogInputMapping.LPC_VALUE.name]
         surplus = data.data.counter_data[data.data.counter_all_data.get_evu_counter_str()].calc_raw_surplus()
         if surplus > 0:
             self.import_power_left = lpc_value + surplus
@@ -75,4 +75,4 @@ class DimmingEebus(AbstractIoAction):
 
     def dimming_active(self) -> bool:
         return data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                   ].data.get.digital_input[DigitalInputMapping.ACTIVE.name]
+                                   ].data.get.digital_input[DigitalInputMapping.LPC_ACTIVE.name]

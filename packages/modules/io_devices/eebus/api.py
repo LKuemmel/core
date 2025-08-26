@@ -46,10 +46,13 @@ def create_io(config: Eebus):
         try:
             return IoState(
                 analog_input={
-                    AnalogInputMapping.VALUE.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]["limit"],
-                    AnalogInputMapping.MSG_COUNTER.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]["msgCounter"],
+                    AnalogInputMapping.LPC_VALUE.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]["limit"],
+                    AnalogInputMapping.LPC_MSG_COUNTER.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]["msgCounter"],
+                    AnalogInputMapping.LPP_VALUE.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpp"]["limit"],
+                    AnalogInputMapping.LPP_MSG_COUNTER.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpp"]["msgCounter"],
                 },
-                digital_input={DigitalInputMapping.ACTIVE.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]["isLimitActive"]})
+                digital_input={DigitalInputMapping.LPC_ACTIVE.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]["isLimitActive"],
+                               DigitalInputMapping.LPP_ACTIVE.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpp"]["isLimitActive"]})
         except KeyError:
             raise KeyError("Es konnten keine Daten von der Steuerbox mit EEbus-Schnittstelle empfangen werden. ")
 

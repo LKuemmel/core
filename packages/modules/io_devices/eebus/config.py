@@ -5,12 +5,15 @@ from modules.common.io_setup import IoDeviceSetup
 
 
 class AnalogInputMapping(Enum):
-    VALUE = "value"
-    MSG_COUNTER = "msg_counter"
+    LPC_VALUE = "lpc_value"
+    LPC_MSG_COUNTER = "lpc_msg_counter"
+    LPP_VALUE = "lpp_value"
+    LPP_MSG_COUNTER = "lpp_msg_counter"
 
 
 class DigitalInputMapping(Enum):
-    ACTIVE = "active"
+    LPC_ACTIVE = "lpc_active"
+    LPP_ACTIVE = "lpp_active"
 
 
 class CertInfo:

@@ -7,7 +7,7 @@ from modules.common.utils.component_parser import get_io_name_by_id
 from modules.io_actions.controllable_consumers.dimming.api_io import DimmingIo
 from modules.io_actions.controllable_consumers.dimming_direct_control.api import DimmingDirectControl
 from modules.io_actions.controllable_consumers.ripple_control_receiver.api import RippleControlReceiver
-from modules.io_actions.generator_systems.stepwise_control.api import StepwiseControl
+from modules.io_actions.generator_systems.stepwise_control.api_io import StepwiseControlIo
 
 
 @dataclass
@@ -54,7 +54,7 @@ class IoStates:
 
 class IoActions:
     def __init__(self):
-        self.actions: Dict[int, Union[DimmingIo, DimmingDirectControl, RippleControlReceiver, StepwiseControl]] = {}
+        self.actions: Dict[int, Union[DimmingIo, DimmingDirectControl, RippleControlReceiver, StepwiseControlIo]] = {}
 
     def setup(self):
         for action in self.actions.values():
@@ -103,7 +103,7 @@ class IoActions:
 
     def stepwise_control(self, device_id: int) -> Optional[float]:
         for action in self.actions.values():
-            if isinstance(action, StepwiseControl):
+            if isinstance(action, StepwiseControlIo):
                 if device_id in [component["id"] for component in action.config.configuration.devices]:
                     self._check_fault_state_io_device(action.config.configuration.io_device)
                     return action.control_stepwise()
