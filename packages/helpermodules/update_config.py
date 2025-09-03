@@ -2535,3 +2535,5 @@ class UpdateConfig:
                     return {topic: payload, "openWB/command/max_id/charge_template_scheduled_plan": max_id}
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 95)
+
+    # def upgrade_datastore_95
