@@ -8,6 +8,7 @@ from control import data
 from control.chargelog import chargelog
 from control.chargelog.chargelog import calculate_charged_energy_by_source
 from control.chargepoint.chargepoint import Chargepoint
+from control.chargepoint.chargepoint_data import empty_enery_source_dict_factory
 from helpermodules import timecheck
 
 
@@ -69,7 +70,7 @@ def init_cp(charged_energy, charged_energy_by_source, start_hour, start_minute=4
 
 
 def test_calc_charge_cost_no_hour_change_reference_end(mock_data, monkeypatch):
-    cp = init_cp(6500, {'bat': 0, 'cp': 0.0, 'grid': 0, 'pv': 0}, 10, start_minute=27)
+    cp = init_cp(6500, empty_enery_source_dict_factory(), 10, start_minute=27)
     daily_log = mock_daily_log_with_charging("05/16/2022, 10:25", 4, monkeypatch)
     mock_create_entry_reference_end("10:42", daily_log, monkeypatch)
 
@@ -80,7 +81,7 @@ def test_calc_charge_cost_no_hour_change_reference_end(mock_data, monkeypatch):
 
 
 def test_calc_charge_cost_first_hour_change_reference_begin(mock_data, monkeypatch):
-    cp = init_cp(6000, {'bat': 0, 'cp': 0.0, 'grid': 0, 'pv': 0}, 7)
+    cp = init_cp(6000, empty_enery_source_dict_factory(), 7)
     daily_log = mock_daily_log_with_charging("05/16/2022, 07:45", 4, monkeypatch)
     current_log = daily_log["entries"][-1]
     current_log["date"] = "08:00"
@@ -94,7 +95,7 @@ def test_calc_charge_cost_first_hour_change_reference_begin(mock_data, monkeypat
 
 
 def test_calc_charge_cost_first_hour_change_reference_begin_day_change(mock_data, monkeypatch):
-    cp = init_cp(6000, {'bat': 0, 'cp': 0.0, 'grid': 0, 'pv': 0}, 23)
+    cp = init_cp(6000, empty_enery_source_dict_factory(), 23)
     daily_log = mock_daily_log_with_charging("05/16/2022, 23:45", 4, monkeypatch)
     current_log = daily_log["entries"][-1]
     current_log["date"] = "00:00"
