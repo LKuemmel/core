@@ -198,10 +198,10 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
         # power calculation needs to be fixed if useful:
         # log_data.imported_since_mode_switch / (duration / 3600)
         power = get_value_or_default(lambda: round(log_data.imported_since_mode_switch / duration, 2))
-    calculate_charge_cost(chargepoint, True)
+    calculate_charged_energy_by_source(chargepoint, True)
     energy_source = get_value_or_default(lambda: analyse_percentage(get_log_from_date_until_now(
         log_data.timestamp_start_charging)["totals"])["energy_source"])
-    costs = round(log_data.costs, 2)
+    costs = round(_calc_costs(log_data.charged_energy_by_source), 2)
     new_entry = {
         "chargepoint":
         {
@@ -382,7 +382,7 @@ def get_totals_of_filtered_log_data(log_data: Dict) -> Dict:
         }
 
 
-def calculate_charge_cost(cp, create_log_entry: bool = False):
+def calculate_charged_energy_by_source(cp, create_log_entry: bool = False):
     content = get_todays_daily_log()
     try:
         if cp.data.set.log.imported_since_plugged != 0 and cp.data.set.log.imported_since_mode_switch != 0:
@@ -414,9 +414,11 @@ def calculate_charge_cost(cp, create_log_entry: bool = False):
                 raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
             log.debug(f'power source {energy_source_entry["energy_source"]}')
             log.debug(f"charged_energy {charged_energy}")
-            costs = _calc(energy_source_entry["energy_source"], charged_energy)
-            cp.data.set.log.costs += costs
-            log.debug(f"current costs {costs}, total costs {cp.data.set.log.costs}")
+            charged_energy_by_source = _get_charged_energy_by_source(
+                energy_source_entry["energy_source"], charged_energy)
+            _add_charged_energy_by_source(cp, charged_energy_by_source)
+            log.debug(f"charged_energy_by_source {charged_energy_by_source} "
+                      f"total charged_energy_by_source {cp.data.set.log.charged_energy_by_source}")
             Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
@@ -426,6 +428,9 @@ class ReferenceTime(Enum):
     START = 0
     MIDDLE = 1
     END = 2
+
+
+ENERGY_SOURCES = ("bat", "cp", "grid", "pv")
 
 
 def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
@@ -490,21 +495,35 @@ def get_daily_log(day):
         return []
 
 
-def _calc(energy_source: Dict[str, float], charged_energy_last_hour: float) -> float:
+def _calc_costs(charged_energy_by_source: Dict[str, float]) -> float:
     prices = data.data.general_data.data.prices
 
-    bat_costs = prices.bat * charged_energy_last_hour * energy_source["bat"]
-    cp_costs = prices.cp * charged_energy_last_hour * energy_source["cp"]
+    bat_costs = prices.bat * charged_energy_by_source["bat"]
+    cp_costs = prices.cp * charged_energy_by_source["cp"]
     try:
-        grid_costs = data.data.optional_data.et_get_current_price() * charged_energy_last_hour * energy_source["grid"]
+        grid_costs = data.data.optional_data.et_get_current_price() * charged_energy_by_source["grid"]
     except Exception:
-        grid_costs = prices.grid * charged_energy_last_hour * energy_source["grid"]
-    pv_costs = prices.pv * charged_energy_last_hour * energy_source["pv"]
+        grid_costs = prices.grid * charged_energy_by_source["grid"]
+    pv_costs = prices.pv * charged_energy_by_source["pv"]
 
     log.debug(
-        f'Ladepreis für die letzte Stunde: {bat_costs}€ Speicher ({energy_source["bat"]}%), {grid_costs}€ Netz '
-        f'({energy_source["grid"]}%), {pv_costs}€ Pv ({energy_source["pv"]}%)')
+        f'Ladepreis nach Energiequelle: {bat_costs}€ Speicher ({charged_energy_by_source["bat"]/1000}kWh), '
+        f'{grid_costs}€ Netz ({charged_energy_by_source["grid"]/1000}kWh),'
+        f' {pv_costs}€ Pv ({charged_energy_by_source["pv"]/1000}kWh), '
+        f'{cp_costs}€ Ladepunkte ({charged_energy_by_source["cp"]/1000}kWh)')
     return round(bat_costs + cp_costs + grid_costs + pv_costs, 4)
+
+
+def _get_charged_energy_by_source(energy_source, charged_energy) -> Dict[str, float]:
+    charged_energy_by_source = {}
+    for source in ENERGY_SOURCES:
+        charged_energy_by_source[source] = energy_source[source] * charged_energy
+    return charged_energy_by_source
+
+
+def _add_charged_energy_by_source(cp, charged_energy_by_source):
+    for source in ENERGY_SOURCES:
+        cp.data.set.log.charged_energy_by_source[source] += charged_energy_by_source[source]
 
 
 def _get_parent_file() -> pathlib.Path:

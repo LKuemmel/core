@@ -19,7 +19,7 @@ import schedule
 import time
 from threading import Event, Thread, enumerate
 import traceback
-from control.chargelog.chargelog import calculate_charge_cost
+from control.chargelog.chargelog import calculate_charged_energy_by_source
 
 from control import data, prepare, process
 from control.algorithm import algorithm
@@ -245,7 +245,7 @@ class HandlerAlgorithm:
         try:
             with ChangedValuesContext(loadvars_.event_module_update_completed):
                 for cp in data.data.cp_data.values():
-                    calculate_charge_cost(cp)
+                    calculate_charged_energy_by_source(cp)
             data.data.optional_data.et_get_prices()
         except Exception:
             log.exception("Fehler im Main-Modul")
