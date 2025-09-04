@@ -7,7 +7,7 @@ from control import data
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import pub_single
 from helpermodules.utils.run_command import run_command
-from helpermodules.utils._thread_handler import thread_handler
+from helpermodules.utils._thread_handler import is_thread_alive, thread_handler
 from helpermodules.utils.topic_parser import decode_payload
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
@@ -44,6 +44,8 @@ def create_io(config: Eebus):
     def read():
         nonlocal broker
         nonlocal received_topics
+        if is_thread_alive("eebus_binary"):
+            run_eebus()
         log.debug(f"Empfange MQTT Daten für Eebus {config.id}: {received_topics}")
         broker.start_finite_loop()
         try:
