@@ -25,6 +25,7 @@ cert_path = f"{Path(__file__).resolve().parents[2]}/data/config/eebus/certs"
 
 def create_io(config: Eebus):
     received_topics = {}
+    broker = None
 
     def run_eebus():
         with SingleComponentUpdateContext(FaultState(ComponentInfo(config.id, config.name, ComponentType.IO.value))):
@@ -37,12 +38,14 @@ def create_io(config: Eebus):
                     config.id
                 )
             except Exception as e:
-                control_command_log.error(f"Dimmen per EMS: Fehler im EEbus-Client: {e}")
+                control_command_log.error(f"Fehler im EEbus-Client: {e}")
                 raise e
 
     def read():
+        nonlocal broker
         nonlocal received_topics
         log.debug(f"Empfange MQTT Daten für Eebus {config.id}: {received_topics}")
+        broker.start_finite_loop()
         try:
             return IoState(
                 analog_input={
@@ -61,6 +64,7 @@ def create_io(config: Eebus):
         pass
 
     def initializer():
+        nonlocal broker
         nonlocal received_topics
         thread_handler(Thread(
             target=run_eebus,
@@ -74,8 +78,8 @@ def create_io(config: Eebus):
             received_topics.update({message.topic: decode_payload(message.payload)})
 
         received_topics = {}
-        BrokerClient(f"subscribeMqttEebus{config.id}",
-                     on_connect, on_message).start_finite_loop()
+        broker = BrokerClient(f"subscribeMqttEebus{config.id}",
+                              on_connect, on_message)
 
     return ConfigurableIo(config=config, component_reader=read, component_writer=write, initializer=initializer)
 
