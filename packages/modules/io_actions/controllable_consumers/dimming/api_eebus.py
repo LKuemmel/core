@@ -6,7 +6,7 @@ from helpermodules.timecheck import create_timestamp
 from dataclass_utils import asdict
 from modules.common.abstract_io import AbstractIoAction
 from modules.io_actions.controllable_consumers.dimming.config import DimmingSetup
-from modules.io_devices.eebus.config import AnalogInputMapping, DigitalInputMapping
+from modules.io_devices.eebus.config import AnalogInputMapping, AnalogOutputMapping, DigitalInputMapping, DigitalOutputMapping
 
 log = logging.getLogger(__name__)
 control_command_log = logging.getLogger("steuve_control_command")
@@ -44,6 +44,13 @@ class DimmingEebus(AbstractIoAction):
             if self.dimming_active():
                 if self.timestamp is None:
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
+                    msg_counter = data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                                      ].data.get.analog_input[AnalogInputMapping.LPC_MSG_COUNTER.name]
+                    data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                        ].data.get.analog_output[AnalogOutputMapping.LPC_MSG_COUNTER.name] = msg_counter
+                    data.data.io_states[f"io_states{self.config.configuration.io_device}"
+                                        ].data.get.analog_output[DigitalOutputMapping.LPC_ACK.name] = True
+                    log.debug(f"Setze LPC_ACK für Nachrichtenzähler {msg_counter}")
                     control_command_log.info("Dimmen aktiviert. Leistungswerte vor Ausführung des Steuerbefehls:")
 
                 msg = (f"EVU-Zähler: "
