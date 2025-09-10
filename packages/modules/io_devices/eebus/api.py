@@ -88,13 +88,13 @@ def create_io(config: Eebus):
     def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]):
         if digital_output[DigitalOutputMapping.LPC_ACK.name]:
             control_command_log.info("LPC_ACK für Steuerbox mit EEbus-Schnittstelle gesetzt.")
-            Pub().pub(f"openWB/set/mqtt/{config.id}/eebus/lpc/set", {"msgCounter": analog_output[AnalogOutputMapping.LPC_MSG_COUNTER.name],
+            Pub().pub(f"openWB/set/mqtt/{config.id}/eebus/set/lpc", {"msgCounter": analog_output[AnalogOutputMapping.LPC_MSG_COUNTER.name],
                                                                      "approve": digital_output[DigitalOutputMapping.LPC_ACK.name]})
             analog_output[AnalogOutputMapping.LPC_MSG_COUNTER.name] = None
             digital_output[DigitalOutputMapping.LPC_ACK.name] = False
         if digital_output[DigitalOutputMapping.LPP_ACK.name]:
             control_command_log.info("LPP_ACK für Steuerbox mit EEbus-Schnittstelle gesetzt.")
-            Pub().pub(f"openWB/set/mqtt/{config.id}/eebus/lpp/set", {"msgCounter": analog_output[AnalogOutputMapping.LPP_MSG_COUNTER.name],
+            Pub().pub(f"openWB/set/mqtt/{config.id}/eebus/set/lpp", {"msgCounter": analog_output[AnalogOutputMapping.LPP_MSG_COUNTER.name],
                                                                      "approve": digital_output[DigitalOutputMapping.LPP_ACK.name]})
             analog_output[AnalogOutputMapping.LPP_MSG_COUNTER.name] = None
             digital_output[DigitalOutputMapping.LPP_ACK.name] = False

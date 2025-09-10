@@ -682,6 +682,13 @@ class SetData:
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
 
+    def process_eebus_topic(self, msg: mqtt.MQTTMessage):
+        try:
+            if re.search("openWB/set/eebus/[0-9]+/[g,s]et/lp[p,c]$", msg.topic) is not None:
+                self._validate_value(msg, "json")
+        except Exception:
+            log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")
+
     def process_general_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Allgemeinen-Topics
 
@@ -802,6 +809,8 @@ class SetData:
             self.process_pv_topic(msg)
         elif "openWB/set/mqtt/vehicle/" in msg.topic:
             self.process_vehicle_topic(msg)
+        elif "openWB/set/mqtt/eebus/" in msg.topic:
+            self.process_eebus_topic(msg)
 
     def process_optional_topic(self, msg: mqtt.MQTTMessage):
         """ Handler für die Optionalen-Topics
