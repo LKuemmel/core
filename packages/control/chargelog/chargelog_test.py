@@ -1,6 +1,7 @@
 
 import datetime
-from unittest.mock import Mock
+import json
+from unittest.mock import MagicMock, Mock, mock_open, patch
 
 import pytest
 
@@ -70,26 +71,28 @@ def init_cp(charged_energy, charged_energy_by_source, start_hour, start_minute=4
 
 
 def test_calc_charge_cost_no_hour_change_reference_end(mock_data, monkeypatch):
-    cp = init_cp(6500, empty_enery_source_dict_factory(), 10, start_minute=27)
-    daily_log = mock_daily_log_with_charging("05/16/2022, 10:25", 4, monkeypatch)
-    mock_create_entry_reference_end("10:42", daily_log, monkeypatch)
+    cp = init_cp(6500, empty_enery_source_dict_factory(), 8, start_minute=24)
+    daily_log = mock_daily_log_with_charging("05/16/2022, 8:25", 4, monkeypatch)
+    datetime_mock = MagicMock(wraps=datetime.datetime)
+    datetime_mock.now.return_value = datetime.datetime.fromtimestamp(1652683252)
+    monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
-    calculate_charged_energy_by_source(cp, True)
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+        calculate_charged_energy_by_source(cp, True)
 
     assert cp.data.set.log.charged_energy_by_source == {
-        'grid': 2000.0499999999997, 'pv': 1500.2, 'bat': 2999.75, 'cp': 0.0}
+        'grid': 1625, 'pv': 1625, 'bat': 3250, 'cp': 0.0}
 
 
 def test_calc_charge_cost_first_hour_change_reference_begin(mock_data, monkeypatch):
     cp = init_cp(6000, empty_enery_source_dict_factory(), 7)
-    daily_log = mock_daily_log_with_charging("05/16/2022, 07:45", 4, monkeypatch)
-    current_log = daily_log["entries"][-1]
-    current_log["date"] = "08:00"
-    current_log["timestamp"] = datetime.datetime.strptime("05/16/2022, 08:00", "%m/%d/%Y, %H:%M").timestamp()
-    mock_create_entry = Mock(return_value=current_log)
-    monkeypatch.setattr(chargelog, "create_entry", mock_create_entry)
+    daily_log = mock_daily_log_with_charging("05/16/2022, 7:45", 4, monkeypatch)
+    datetime_mock = MagicMock(wraps=datetime.datetime)
+    datetime_mock.now.return_value = datetime.datetime.fromtimestamp(1652680800)
+    monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
-    calculate_charged_energy_by_source(cp, False)
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+        calculate_charged_energy_by_source(cp, False)
 
     assert cp.data.set.log.charged_energy_by_source == {'grid': 1500, 'pv': 1500, 'bat': 3000, 'cp': 0.0}
 
@@ -97,15 +100,12 @@ def test_calc_charge_cost_first_hour_change_reference_begin(mock_data, monkeypat
 def test_calc_charge_cost_first_hour_change_reference_begin_day_change(mock_data, monkeypatch):
     cp = init_cp(6000, empty_enery_source_dict_factory(), 23)
     daily_log = mock_daily_log_with_charging("05/16/2022, 23:45", 4, monkeypatch)
-    current_log = daily_log["entries"][-1]
-    current_log["date"] = "00:00"
-    current_log["timestamp"] = datetime.datetime.strptime("05/17/2022, 00:00", "%m/%d/%Y, %H:%M").timestamp()
-    mock_create_entry = Mock(return_value=current_log)
-    monkeypatch.setattr(chargelog, "create_entry", mock_create_entry)
-    mock_today_timestamp = Mock(return_value=1652738421)
-    monkeypatch.setattr(timecheck, "create_timestamp", mock_today_timestamp)
+    datetime_mock = MagicMock(wraps=datetime.datetime)
+    datetime_mock.now.return_value = datetime.datetime.fromtimestamp(1652738400)
+    monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
-    calculate_charged_energy_by_source(cp, False)
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+        calculate_charged_energy_by_source(cp, False)
 
     assert cp.data.set.log.charged_energy_by_source == {'grid': 1500, 'pv': 1500, 'bat': 3000, 'cp': 0.0}
 
@@ -113,9 +113,12 @@ def test_calc_charge_cost_first_hour_change_reference_begin_day_change(mock_data
 def test_calc_charge_cost_one_hour_change_reference_end(mock_data, monkeypatch):
     cp = init_cp(22500, {'bat': 1000, 'cp': 0.0, 'grid': 1000, 'pv': 1000}, 7)
     daily_log = mock_daily_log_with_charging("05/16/2022, 07:45", 12, monkeypatch)
-    mock_create_entry_reference_end("08:40", daily_log, monkeypatch)
+    datetime_mock = MagicMock(wraps=datetime.datetime)
+    datetime_mock.now.return_value = datetime.datetime.fromtimestamp(1652683201)
+    monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
-    calculate_charged_energy_by_source(cp, True)
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+        calculate_charged_energy_by_source(cp, True)
 
     assert cp.data.set.log.charged_energy_by_source == {'bat': 8999.2, 'cp': 0.0, 'grid': 5499.55, 'pv': 5001.25}
 
@@ -123,15 +126,15 @@ def test_calc_charge_cost_one_hour_change_reference_end(mock_data, monkeypatch):
 def test_calc_charge_cost_two_hour_change_reference_middle(mock_data, monkeypatch):
     cp = init_cp(22500, {'bat': 1000, 'cp': 0.0, 'grid': 1000, 'pv': 1000}, 6)
     daily_log = mock_daily_log_with_charging("05/16/2022, 06:45", 16, monkeypatch)
-    current_log = daily_log["entries"][-1]
-    current_log["date"] = "08:00"
-    current_log["timestamp"] = datetime.datetime(2022, 5, 16, 8).timestamp()
-    mock_create_entry = Mock(return_value=current_log)
-    monkeypatch.setattr(chargelog, "create_entry", mock_create_entry)
     mock_today_timestamp = Mock(return_value=1652680801)
     monkeypatch.setattr(timecheck, "create_timestamp", mock_today_timestamp)
 
-    calculate_charged_energy_by_source(cp, False)
+    datetime_mock = MagicMock(wraps=datetime.datetime)
+    datetime_mock.now.return_value = datetime.datetime.fromtimestamp(1652680801)
+    monkeypatch.setattr(datetime, "datetime", datetime_mock)
+
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+        calculate_charged_energy_by_source(cp, False)
 
     assert cp.data.set.log.charged_energy_by_source == {'bat': 13000.0, 'cp': 0.0, 'grid': 7000.0, 'pv': 7000.0}
 
@@ -139,8 +142,13 @@ def test_calc_charge_cost_two_hour_change_reference_middle(mock_data, monkeypatc
 def test_calc_charge_cost_two_hour_change_reference_end(mock_data, monkeypatch):
     cp = init_cp(46500, {'bat': 1000, 'cp': 0.0, 'grid': 1000, 'pv': 1000}, 6)
     daily_log = mock_daily_log_with_charging("05/16/2022, 06:45", 24, monkeypatch)
-    mock_create_entry_reference_end("08:40", daily_log, monkeypatch)
+    # mock_create_entry_reference_end("08:40", daily_log, monkeypatch)
 
-    calculate_charged_energy_by_source(cp, True)
+    datetime_mock = MagicMock(wraps=datetime.datetime)
+    datetime_mock.now.return_value = datetime.datetime.fromtimestamp(1652683201)
+    monkeypatch.setattr(datetime, "datetime", datetime_mock)
+
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+        calculate_charged_energy_by_source(cp, True)
 
     assert cp.data.set.log.charged_energy_by_source == {'bat': 8999.2, 'cp': 0.0, 'grid': 5499.55, 'pv': 5001.25}
