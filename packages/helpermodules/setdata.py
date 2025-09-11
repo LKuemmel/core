@@ -684,7 +684,7 @@ class SetData:
 
     def process_eebus_topic(self, msg: mqtt.MQTTMessage):
         try:
-            if re.search("openWB/set/eebus/[0-9]+/[g,s]et/lp[p,c]$", msg.topic) is not None:
+            if re.search("openWB/set/mqtt/eebus/[0-9]+/[g,s]et/lp[p,c]$", msg.topic) is not None:
                 self._validate_value(msg, "json")
         except Exception:
             log.exception(f"Fehler im setdata-Modul: Topic {msg.topic}, Value: {msg.payload}")

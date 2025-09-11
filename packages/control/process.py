@@ -102,7 +102,8 @@ class Process:
                     modules_threads.append(
                         Thread(
                             target=io.write,
-                            args=(None, data.data.io_states[f"io_states{io.config.id}"].data.set.digital_output,),
+                            args=(data.data.io_states[f"io_states{io.config.id}"].data.set.analog_output,
+                                  data.data.io_states[f"io_states{io.config.id}"].data.set.digital_output,),
                             name=f"set output io{io.config.id}"))
             if modules_threads:
                 joined_thread_handler(modules_threads, 3)

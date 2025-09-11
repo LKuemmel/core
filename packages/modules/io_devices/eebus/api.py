@@ -40,30 +40,37 @@ def create_io(config: Eebus):
     broker = None
 
     def run_eebus():
-        with SingleComponentUpdateContext(FaultState(ComponentInfo(config.id, config.name, ComponentType.IO.value))):
-            try:
-                result = subprocess.run(
-                    [f"{Path(__file__).resolve().parents[0]}/eebus_hems_client",
-                     str(config.configuration.port),
-                     config.configuration.remote_ski,
-                        f"{cert_path}/hems-cert-{config.id}.pem",
-                        f"{cert_path}/hems-key-{config.id}.pem",
-                        str(config.id),
-                        f"{Path(__file__).resolve().parents[4]}/ramdisk/eebus_hems_client.log"],
+        def run():
+            with SingleComponentUpdateContext(FaultState(ComponentInfo(config.id, config.name, ComponentType.IO.value))):
+                try:
+                    log.debug(
+                        f"Starte EEbus-Client für Steuerbox mit ID {config.id} und SKI {config.configuration.remote_ski}")
+                    result = subprocess.run(
+                        [f"{Path(__file__).resolve().parents[0]}/eebus_hems_client",
+                         str(config.configuration.port),
+                         config.configuration.remote_ski,
+                            f"{cert_path}/hems-cert-{config.id}.pem",
+                            f"{cert_path}/hems-key-{config.id}.pem",
+                            str(config.id),
+                            f"{Path(__file__).resolve().parents[4]}/ramdisk/eebus_hems_client.log"],
 
-                    check=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-                if result.returncode == 2:
-                    raise ValueError(
-                        "Zertifikat oder Key ungültig. Wenn das Zertifikat abgelaufen ist, bitte in den Einstellungen ein neues Zertifikat generieren und den SKI beim VNB akutalisieren.")
-                else:
-                    raise ValueError(f"Fehlercode: {result.returncode}, Fehler: {result.stderr}")
-            except Exception as e:
-                control_command_log.error(f"Fehler im EEbus-Client: {e}")
-                raise e
+                        check=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True
+                    )
+                    if result.returncode == 2:
+                        raise ValueError(
+                            "Zertifikat oder Key ungültig. Wenn das Zertifikat abgelaufen ist, bitte in den Einstellungen ein neues Zertifikat generieren und den SKI beim VNB akutalisieren.")
+                    else:
+                        raise ValueError(f"Fehlercode: {result.returncode}, Fehler: {result.stderr}")
+                except Exception as e:
+                    control_command_log.error(f"Fehler im EEbus-Client: {e}")
+                    raise e
+        thread_handler(Thread(
+            target=run,
+            args=(),
+            name="eebus_binary"))
 
     def read():
         nonlocal broker
@@ -73,29 +80,50 @@ def create_io(config: Eebus):
         log.debug(f"Empfange MQTT Daten für Eebus {config.id}: {received_topics}")
         broker.start_finite_loop()
         try:
-            return IoState(
-                analog_input={
-                    AnalogInputMapping.LPC_VALUE.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]["limit"],
-                    AnalogInputMapping.LPC_MSG_COUNTER.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]["msgCounter"],
-                    AnalogInputMapping.LPP_VALUE.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpp"]["limit"],
-                    AnalogInputMapping.LPP_MSG_COUNTER.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpp"]["msgCounter"],
-                },
-                digital_input={DigitalInputMapping.LPC_ACTIVE.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]["isLimitActive"],
-                               DigitalInputMapping.LPP_ACTIVE.name: received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpp"]["isLimitActive"]})
+            io_state = IoState()
+            io_state.analog_input = getattr(io_state, "analog_input", None) or {}
+            io_state.digital_input = getattr(io_state, "digital_input", None) or {}
+            if received_topics.get(f"openWB/mqtt/eebus/{config.id}/get/lpc"):
+                lpc_payload = received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]
+                io_state.analog_input.update({
+                    AnalogInputMapping.LPC_VALUE.name: lpc_payload["limit"],
+                    AnalogInputMapping.LPC_MSG_COUNTER.name: lpc_payload["msgCounter"],
+                })
+                io_state.digital_input.update({DigitalInputMapping.LPC_ACTIVE.name: lpc_payload["isLimitActive"]})
+
+            if received_topics.get(f"openWB/mqtt/eebus/{config.id}/get/lpp"):
+                lpp_payload = received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpp"]
+                io_state.analog_input.update({
+                    AnalogInputMapping.LPP_VALUE.name: lpp_payload["limit"],
+                    AnalogInputMapping.LPP_MSG_COUNTER.name: lpp_payload["msgCounter"],
+                })
+                io_state.digital_input.update({DigitalInputMapping.LPP_ACTIVE.name: lpp_payload["isLimitActive"]})
+            return io_state
         except KeyError:
-            raise KeyError("Es konnten keine Daten von der Steuerbox mit EEbus-Schnittstelle empfangen werden. ")
+            log.debug("Es wurden noch keine Befehle von der Steuerbox mit EEbus-Schnittstelle empfangen . ")
 
     def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]):
-        if digital_output[DigitalOutputMapping.LPC_ACK.name]:
+        # nur bestätigen, wenn noch keine Bstätigung für diese Nachricht gesendet wurde
+        nonlocal received_topics
+        if (digital_output[DigitalOutputMapping.LPC_ACK.name] and
+                received_topics.get(f"openWB/mqtt/eebus/{config.id}/set/lpc") and
+                received_topics[f"openWB/mqtt/eebus/{config.id}/set/lpc"]["msgCounter"] == analog_output[
+                    AnalogOutputMapping.LPC_MSG_COUNTER.name]):
             control_command_log.info("LPC_ACK für Steuerbox mit EEbus-Schnittstelle gesetzt.")
-            Pub().pub(f"openWB/set/mqtt/{config.id}/eebus/set/lpc", {"msgCounter": analog_output[AnalogOutputMapping.LPC_MSG_COUNTER.name],
-                                                                     "approve": digital_output[DigitalOutputMapping.LPC_ACK.name]})
+            Pub().pub(f"openWB/set/mqtt/eebus/{config.id}/set/lpc",
+                      {"msgCounter": analog_output[AnalogOutputMapping.LPC_MSG_COUNTER.name],
+                       "approve": digital_output[DigitalOutputMapping.LPC_ACK.name]})
             analog_output[AnalogOutputMapping.LPC_MSG_COUNTER.name] = None
             digital_output[DigitalOutputMapping.LPC_ACK.name] = False
-        if digital_output[DigitalOutputMapping.LPP_ACK.name]:
+
+        if (digital_output[DigitalOutputMapping.LPP_ACK.name] and
+            received_topics.get(f"openWB/mqtt/eebus/{config.id}/set/lpp") and
+            received_topics[f"openWB/mqtt/eebus/{config.id}/set/lpp"]["msgCounter"] == analog_output[
+                AnalogOutputMapping.LPP_MSG_COUNTER.name]):
             control_command_log.info("LPP_ACK für Steuerbox mit EEbus-Schnittstelle gesetzt.")
-            Pub().pub(f"openWB/set/mqtt/{config.id}/eebus/set/lpp", {"msgCounter": analog_output[AnalogOutputMapping.LPP_MSG_COUNTER.name],
-                                                                     "approve": digital_output[DigitalOutputMapping.LPP_ACK.name]})
+            Pub().pub(f"openWB/set/mqtt/eebus/{config.id}/set/lpp",
+                      {"msgCounter": analog_output[AnalogOutputMapping.LPP_MSG_COUNTER.name],
+                       "approve": digital_output[DigitalOutputMapping.LPP_ACK.name]})
             analog_output[AnalogOutputMapping.LPP_MSG_COUNTER.name] = None
             digital_output[DigitalOutputMapping.LPP_ACK.name] = False
 
@@ -103,13 +131,10 @@ def create_io(config: Eebus):
         nonlocal broker
         nonlocal received_topics
         Path(f"{Path(__file__).resolve().parents[4]}/ramdisk/eebus_hems_client.log").touch(exist_ok=True)
-        thread_handler(Thread(
-            target=run_eebus,
-            args=(),
-            name="eebus_binary"))
+        run_eebus()
 
         def on_connect(client, userdata, flags, rc):
-            client.subscribe(f"openWB/mqtt/eebus/{config.id}/get/#")
+            client.subscribe(f"openWB/mqtt/eebus/{config.id}/#")
 
         def on_message(client, userdata, message):
             received_topics.update({message.topic: decode_payload(message.payload)})
