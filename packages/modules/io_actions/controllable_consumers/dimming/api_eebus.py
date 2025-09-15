@@ -46,11 +46,6 @@ class DimmingEebus(AbstractIoAction):
                     Pub().pub(f"openWB/set/io/action/{self.config.id}/timestamp", create_timestamp())
                     msg_counter = data.data.io_states[f"io_states{self.config.configuration.io_device}"
                                                       ].data.get.analog_input[AnalogInputMapping.LPC_MSG_COUNTER.name]
-                    data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                        ].data.get.analog_output[AnalogOutputMapping.LPC_MSG_COUNTER.name] = msg_counter
-                    data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                        ].data.get.analog_output[DigitalOutputMapping.LPC_ACK.name] = True
-                    log.debug(f"Setze LPC_ACK für Nachrichtenzähler {msg_counter}")
                     control_command_log.info("Dimmen aktiviert. Leistungswerte vor Ausführung des Steuerbefehls:")
 
                 msg = (f"EVU-Zähler: "

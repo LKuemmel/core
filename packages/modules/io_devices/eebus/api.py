@@ -83,21 +83,43 @@ def create_io(config: Eebus):
             io_state = IoState()
             io_state.analog_input = getattr(io_state, "analog_input", None) or {}
             io_state.digital_input = getattr(io_state, "digital_input", None) or {}
+
+            def process_payload(payload, value_key, msg_counter_key, active_key, ack_key, typ):
+                io_state.analog_input.update({
+                    value_key: payload["limit"],
+                    msg_counter_key: payload["msgCounter"],
+                })
+                io_state.digital_input.update({active_key: payload["isLimitActive"]})
+                if payload["isLimitActive"]:
+                    io_state_obj = data.data.io_states[f"io_states{config.id}"].data.set
+                    if not hasattr(io_state_obj, "analog_output") or io_state_obj.analog_output is None:
+                        io_state_obj.analog_output = {}
+                    io_state_obj.analog_output[msg_counter_key] = payload["msgCounter"]
+                    io_state_obj.analog_output[ack_key] = True
+                    log.debug(f"Setze {typ}_ACK für Nachrichtenzähler {payload['msgCounter']}")
+
             if received_topics.get(f"openWB/mqtt/eebus/{config.id}/get/lpc"):
                 lpc_payload = received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]
-                io_state.analog_input.update({
-                    AnalogInputMapping.LPC_VALUE.name: lpc_payload["limit"],
-                    AnalogInputMapping.LPC_MSG_COUNTER.name: lpc_payload["msgCounter"],
-                })
-                io_state.digital_input.update({DigitalInputMapping.LPC_ACTIVE.name: lpc_payload["isLimitActive"]})
+                process_payload(
+                    lpc_payload,
+                    AnalogInputMapping.LPC_VALUE.name,
+                    AnalogInputMapping.LPC_MSG_COUNTER.name,
+                    DigitalInputMapping.LPC_ACTIVE.name,
+                    DigitalOutputMapping.LPC_ACK.name,
+                    "LPC"
+                )
 
             if received_topics.get(f"openWB/mqtt/eebus/{config.id}/get/lpp"):
                 lpp_payload = received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpp"]
-                io_state.analog_input.update({
-                    AnalogInputMapping.LPP_VALUE.name: lpp_payload["limit"],
-                    AnalogInputMapping.LPP_MSG_COUNTER.name: lpp_payload["msgCounter"],
-                })
-                io_state.digital_input.update({DigitalInputMapping.LPP_ACTIVE.name: lpp_payload["isLimitActive"]})
+                process_payload(
+                    lpp_payload,
+                    AnalogInputMapping.LPP_VALUE.name,
+                    AnalogInputMapping.LPP_MSG_COUNTER.name,
+                    DigitalInputMapping.LPP_ACTIVE.name,
+                    DigitalOutputMapping.LPP_ACK.name,
+                    "LPP"
+                )
+
             return io_state
         except KeyError:
             log.debug("Es wurden noch keine Befehle von der Steuerbox mit EEbus-Schnittstelle empfangen . ")
@@ -105,27 +127,19 @@ def create_io(config: Eebus):
     def write(analog_output: Optional[Dict[str, int]], digital_output: Optional[Dict[str, bool]]):
         # nur bestätigen, wenn noch keine Bstätigung für diese Nachricht gesendet wurde
         nonlocal received_topics
-        if (digital_output[DigitalOutputMapping.LPC_ACK.name] and
-                received_topics.get(f"openWB/mqtt/eebus/{config.id}/set/lpc") and
-                received_topics[f"openWB/mqtt/eebus/{config.id}/set/lpc"]["msgCounter"] == analog_output[
-                    AnalogOutputMapping.LPC_MSG_COUNTER.name]):
-            control_command_log.info("LPC_ACK für Steuerbox mit EEbus-Schnittstelle gesetzt.")
-            Pub().pub(f"openWB/set/mqtt/eebus/{config.id}/set/lpc",
-                      {"msgCounter": analog_output[AnalogOutputMapping.LPC_MSG_COUNTER.name],
-                       "approve": digital_output[DigitalOutputMapping.LPC_ACK.name]})
-            analog_output[AnalogOutputMapping.LPC_MSG_COUNTER.name] = None
-            digital_output[DigitalOutputMapping.LPC_ACK.name] = False
 
-        if (digital_output[DigitalOutputMapping.LPP_ACK.name] and
-            received_topics.get(f"openWB/mqtt/eebus/{config.id}/set/lpp") and
-            received_topics[f"openWB/mqtt/eebus/{config.id}/set/lpp"]["msgCounter"] == analog_output[
-                AnalogOutputMapping.LPP_MSG_COUNTER.name]):
-            control_command_log.info("LPP_ACK für Steuerbox mit EEbus-Schnittstelle gesetzt.")
-            Pub().pub(f"openWB/set/mqtt/eebus/{config.id}/set/lpp",
-                      {"msgCounter": analog_output[AnalogOutputMapping.LPP_MSG_COUNTER.name],
-                       "approve": digital_output[DigitalOutputMapping.LPP_ACK.name]})
-            analog_output[AnalogOutputMapping.LPP_MSG_COUNTER.name] = None
-            digital_output[DigitalOutputMapping.LPP_ACK.name] = False
+        def send_ack(ack_type, msg_counter_type, topic_suffix):
+            if (digital_output[ack_type] != digital_output_prev[ack_type] and
+                    analog_output[msg_counter_type] != analog_output_prev[msg_counter_type]):
+                control_command_log.info(f"{ack_type} für Steuerbox mit EEbus-Schnittstelle gesetzt.")
+                Pub().pub(f"openWB/set/mqtt/eebus/{config.id}/set/{topic_suffix}",
+                          {"msgCounter": analog_output[msg_counter_type],
+                           "approve": digital_output[ack_type]})
+
+        analog_output_prev = data.data.io_states[f"io_states{config.id}"].data.set.analog_output_prev
+        digital_output_prev = data.data.io_states[f"io_states{config.id}"].data.set.digital_output_prev
+        send_ack(DigitalOutputMapping.LPC_ACK.name, AnalogOutputMapping.LPC_MSG_COUNTER.name, "lpc")
+        send_ack(DigitalOutputMapping.LPP_ACK.name, AnalogOutputMapping.LPP_MSG_COUNTER.name, "lpp")
 
     def initializer():
         nonlocal broker
