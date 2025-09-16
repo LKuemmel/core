@@ -3,10 +3,10 @@ from pathlib import Path
 import logging
 import subprocess
 from threading import Thread
-from typing import Dict, Optional
 
 from control import data
 from dataclass_utils._dataclass_asdict import asdict
+from helpermodules import timecheck
 from helpermodules.broker import BrokerClient
 from helpermodules.pub import Pub, pub_single
 from helpermodules.utils.run_command import run_command
@@ -18,7 +18,7 @@ from modules.common.component_state import IoState
 from modules.common.component_type import ComponentType
 from modules.common.configurable_io import ConfigurableIo
 from modules.common.fault_state import ComponentInfo, FaultState
-from modules.io_devices.eebus.config import AnalogInputMapping, AnalogOutputMapping, CertInfo, DigitalInputMapping, DigitalOutputMapping, Eebus
+from modules.io_devices.eebus.config import AnalogInputMapping, CertInfo, DigitalInputMapping, Eebus
 
 log = logging.getLogger(__name__)
 control_command_log = logging.getLogger("steuve_control_command")
@@ -79,56 +79,54 @@ def create_io(config: Eebus):
             run_eebus()
         log.debug(f"Empfange MQTT Daten für Eebus {config.id}: {received_topics}")
         broker.start_finite_loop()
-        try:
-            io_state = IoState()
-            io_state.analog_input = getattr(io_state, "analog_input", None) or {}
-            io_state.analog_output = getattr(io_state, "analog_output", None) or {}
-            io_state.digital_input = getattr(io_state, "digital_input", None) or {}
-            io_state.digital_output = getattr(io_state, "digital_output", None) or {}
+        io_state = IoState()
+        io_state.analog_input = getattr(io_state, "analog_input", None) or {}
+        io_state.analog_output = getattr(io_state, "analog_output", None) or {}
+        io_state.digital_input = getattr(io_state, "digital_input", None) or {}
+        io_state.digital_output = getattr(io_state, "digital_output", None) or {}
 
-            def process_payload(payload, value_key, msg_counter_key, active_key, ack_key, typ, topic_suffix):
-                io_state.analog_input.update({
-                    value_key: payload["limit"],
-                    msg_counter_key: payload["msgCounter"],
-                })
-                io_state.digital_input.update({active_key: payload["isLimitActive"]})
-                if payload["isLimitActive"]:
-                    Pub().pub(f"openWB/set/mqtt/eebus/{config.id}/set/{topic_suffix}",
-                              {"msgCounter": payload["msgCounter"],
-                               "approve": True})
-                    log.debug(f"Setze {typ}_ACK für Nachrichtenzähler {payload['msgCounter']}")
-                else:
-                    Pub().pub(f"openWB/set/mqtt/eebus/{config.id}/set/{topic_suffix}",
-                              {"msgCounter": payload["msgCounter"],
-                               "approve": False})
+        def process_payload(payload, value_key, msg_counter_key, active_key, end_time_key, typ, topic_suffix):
+            io_state.analog_input.update({
+                value_key: payload["limit"],
+                msg_counter_key: payload["msgCounter"],
+                end_time_key: timecheck.create_timestamp() + timecheck.parse_iso8601_duration(payload["duration"])
+            })
+            io_state.digital_input.update({active_key: payload["isLimitActive"]})
+            if payload["isLimitActive"]:
+                Pub().pub(f"openWB/set/mqtt/eebus/{config.id}/set/{topic_suffix}",
+                          {"msgCounter": payload["msgCounter"],
+                           "approve": True})
+                log.debug(f"Setze {typ}_ACK für Nachrichtenzähler {payload['msgCounter']}")
+            else:
+                Pub().pub(f"openWB/set/mqtt/eebus/{config.id}/set/{topic_suffix}",
+                          {"msgCounter": payload["msgCounter"],
+                           "approve": False})
 
-            if received_topics.get(f"openWB/mqtt/eebus/{config.id}/get/lpc"):
-                lpc_payload = received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]
-                process_payload(
-                    lpc_payload,
-                    AnalogInputMapping.LPC_VALUE.name,
-                    AnalogInputMapping.LPC_MSG_COUNTER.name,
-                    DigitalInputMapping.LPC_ACTIVE.name,
-                    DigitalOutputMapping.LPC_ACK.name,
-                    "LPC",
-                    "lpc"
-                )
+        if received_topics.get(f"openWB/mqtt/eebus/{config.id}/get/lpc"):
+            lpc_payload = received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpc"]
+            process_payload(
+                lpc_payload,
+                AnalogInputMapping.LPC_VALUE.name,
+                AnalogInputMapping.LPC_MSG_COUNTER.name,
+                DigitalInputMapping.LPC_ACTIVE.name,
+                AnalogInputMapping.LPC_END_TIME.name,
+                "LPC",
+                "lpc"
+            )
 
-            if received_topics.get(f"openWB/mqtt/eebus/{config.id}/get/lpp"):
-                lpp_payload = received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpp"]
-                process_payload(
-                    lpp_payload,
-                    AnalogInputMapping.LPP_VALUE.name,
-                    AnalogInputMapping.LPP_MSG_COUNTER.name,
-                    DigitalInputMapping.LPP_ACTIVE.name,
-                    DigitalOutputMapping.LPP_ACK.name,
-                    "LPP",
-                    "lpp"
-                )
+        if received_topics.get(f"openWB/mqtt/eebus/{config.id}/get/lpp"):
+            lpp_payload = received_topics[f"openWB/mqtt/eebus/{config.id}/get/lpp"]
+            process_payload(
+                lpp_payload,
+                AnalogInputMapping.LPP_VALUE.name,
+                AnalogInputMapping.LPP_MSG_COUNTER.name,
+                DigitalInputMapping.LPP_ACTIVE.name,
+                AnalogInputMapping.LPP_END_TIME.name,
+                "LPP",
+                "lpp"
+            )
 
-            return io_state
-        except KeyError:
-            log.debug("Es wurden noch keine Befehle von der Steuerbox mit EEbus-Schnittstelle empfangen . ")
+        return io_state
 
     def initializer():
         nonlocal broker

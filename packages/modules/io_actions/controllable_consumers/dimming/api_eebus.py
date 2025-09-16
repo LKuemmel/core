@@ -1,12 +1,13 @@
 import logging
 from control import data
+from helpermodules import timecheck
 from helpermodules.logger import ModifyLoglevelContext
 from helpermodules.pub import Pub
 from helpermodules.timecheck import create_timestamp
 from dataclass_utils import asdict
 from modules.common.abstract_io import AbstractIoAction
 from modules.io_actions.controllable_consumers.dimming.config import DimmingSetup
-from modules.io_devices.eebus.config import AnalogInputMapping, AnalogOutputMapping, DigitalInputMapping, DigitalOutputMapping
+from modules.io_devices.eebus.config import AnalogInputMapping, DigitalInputMapping
 
 log = logging.getLogger(__name__)
 control_command_log = logging.getLogger("steuve_control_command")
@@ -76,5 +77,6 @@ class DimmingEebus(AbstractIoAction):
         return self.import_power_left
 
     def dimming_active(self) -> bool:
-        return data.data.io_states[f"io_states{self.config.configuration.io_device}"
-                                   ].data.get.digital_input[DigitalInputMapping.LPC_ACTIVE.name]
+        io_get = data.data.io_states[f"io_states{self.config.configuration.io_device}"].data.get
+        return (io_get.digital_input[DigitalInputMapping.LPC_ACTIVE.name] and
+                io_get.analog_input[AnalogInputMapping.LPC_END_TIME.name] < timecheck.create_timestamp())

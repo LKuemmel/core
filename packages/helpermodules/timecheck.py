@@ -2,6 +2,7 @@
 """
 import logging
 import datetime
+import re
 from typing import List, Optional, Tuple, TypeVar, Union
 
 from helpermodules.utils.error_handling import ImportErrorContext
@@ -336,3 +337,27 @@ def convert_timestamp_delta_to_time_string(timestamp: int, delta: int) -> str:
         return f"{minute_diff} Min."
     elif seconds_diff > 0:
         return f"{seconds_diff} Sek."
+
+
+def parse_iso8601_duration(duration: str) -> float:
+    """
+    Parst eine ISO-8601 Duration wie 'PT3723S', 'P1DT2H30M', etc.
+    Gibt ein timedelta zurück.
+    """
+    pattern = re.compile(
+        r'P'                      # beginnt immer mit P
+        r'(?:(?P<days>\d+)D)?'    # Tage
+        r'(?:T'                   # Zeit-Teil beginnt mit T
+        r'(?:(?P<hours>\d+)H)?'   # Stunden
+        r'(?:(?P<minutes>\d+)M)?'  # Minuten
+        r'(?:(?P<seconds>\d+)S)?'  # Sekunden
+        r')?$'
+    )
+
+    match = pattern.fullmatch(duration)
+    if not match:
+        raise ValueError(f"Ungültiges ISO-8601 Duration Format: {duration}")
+
+    parts = {name: int(val) if val else 0 for name, val in match.groupdict().items()}
+    return datetime.timedelta(days=parts["days"], hours=parts["hours"],
+                              minutes=parts["minutes"], seconds=parts["seconds"]).total_seconds()

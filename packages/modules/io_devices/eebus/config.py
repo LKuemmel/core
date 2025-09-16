@@ -5,8 +5,10 @@ from modules.common.io_setup import IoDeviceSetup
 
 
 class AnalogInputMapping(Enum):
+    LPC_END_TIME = "lpc_end_time"
     LPC_VALUE = "lpc_value"
     LPC_MSG_COUNTER = "lpc_msg_counter"
+    LPP_END_TIME = "lpp_end_time"
     LPP_VALUE = "lpp_value"
     LPP_MSG_COUNTER = "lpp_msg_counter"
 
@@ -14,16 +16,6 @@ class AnalogInputMapping(Enum):
 class DigitalInputMapping(Enum):
     LPC_ACTIVE = "lpc_active"
     LPP_ACTIVE = "lpp_active"
-
-
-class AnalogOutputMapping(Enum):
-    LPC_MSG_COUNTER = "lpc_msg_counter"
-    LPP_MSG_COUNTER = "lpp_msg_counter"
-
-
-class DigitalOutputMapping(Enum):
-    LPC_ACK = "lpc_ack"
-    LPP_ACK = "lpp_ack"
 
 
 class CertInfo:
@@ -47,11 +39,6 @@ def init_input():
             "digital": {pin.name: False for pin in DigitalInputMapping}}
 
 
-def init_output():
-    return {"analog": {pin.name: None for pin in AnalogOutputMapping},
-            "digital": {pin.name: False for pin in DigitalOutputMapping}}
-
-
 @auto_str
 class Eebus(IoDeviceSetup[EebusConfiguration]):
     def __init__(self,
@@ -63,6 +50,4 @@ class Eebus(IoDeviceSetup[EebusConfiguration]):
                  output: Dict[str, Dict[int, float]] = None) -> None:
         if input is None:
             input = init_input()
-        if output is None:
-            output = init_output()
         super().__init__(name, type, id, configuration or EebusConfiguration(), input=input, output=output)

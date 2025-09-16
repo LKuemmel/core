@@ -6,10 +6,11 @@ from modules.io_actions.controllable_consumers.dimming.config import DimmingSetu
 
 
 def create_action(config: DimmingSetup):
-    if data.data.system_data[f"io{config.configuration.io_device}"].config.type == "eebus":
-        return DimmingEebus(config=config)
-    else:
-        return DimmingIo(config=config)
+    return DimmingEebus(config=config)
+    # if data.data.system_data[f"io{config.configuration.io_device}"].config.type == "eebus":
+
+    # else:
+    #     return DimmingIo(config=config)
 
 
 device_descriptor = DeviceDescriptor(configuration_factory=DimmingSetup)
