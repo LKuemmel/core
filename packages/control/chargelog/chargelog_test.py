@@ -84,6 +84,34 @@ def test_calc_charge_cost_no_hour_change_reference_end(mock_data, monkeypatch):
         'grid': 1625, 'pv': 1625, 'bat': 3250, 'cp': 0.0}
 
 
+def test_calc_charge_cost_no_hour_change_reference_end_no_charge_at_end(mock_data, monkeypatch):
+    cp = init_cp(6500, empty_enery_source_dict_factory(), 8, start_minute=24)
+    daily_log = mock_daily_log_with_charging("05/16/2022, 8:25", 4, monkeypatch)
+    # großer Spung im Netzbezug, aber keine Ladung mehr, gleiches Ergebnis wie oben
+    daily_log["entries"].append({'bat': {'all': {'exported': 5000, 'imported': 2000, 'soc': 100},
+                                         'bat2': {'exported': 5000, 'imported': 2000, 'soc': 100}},
+                                 'counter': {'counter0': {'exported': 2000,
+                                                          'grid': True,
+                                                          'imported': 7000}},
+                                 'cp': {'all': {'exported': 0, 'imported': 8000},
+                                        'cp4': {'exported': 0, 'imported': 8000}},
+                                 'date': '08:45',
+                                 'ev': {'ev0': {'soc': None}},
+                                 'hc': {'all': {'imported': 0}},
+                                 'pv': {'all': {'exported': 3500}, 'pv1': {'exported': 3500}},
+                                 'sh': {},
+                                 'timestamp': 1652683500})
+    datetime_mock = MagicMock(wraps=datetime.datetime)
+    datetime_mock.now.return_value = datetime.datetime.fromtimestamp(1652683552)
+    monkeypatch.setattr(datetime, "datetime", datetime_mock)
+
+    with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
+        calculate_charged_energy_by_source(cp, True)
+
+    assert cp.data.set.log.charged_energy_by_source == {
+        'grid': 1625, 'pv': 1625, 'bat': 3250, 'cp': 0.0}
+
+
 def test_calc_charge_cost_first_hour_change_reference_begin(mock_data, monkeypatch):
     cp = init_cp(6000, empty_enery_source_dict_factory(), 7)
     daily_log = mock_daily_log_with_charging("05/16/2022, 7:45", 4, monkeypatch)
@@ -120,7 +148,7 @@ def test_calc_charge_cost_one_hour_change_reference_end(mock_data, monkeypatch):
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
         calculate_charged_energy_by_source(cp, True)
 
-    assert cp.data.set.log.charged_energy_by_source == {'bat': 8999.2, 'cp': 0.0, 'grid': 5499.55, 'pv': 5001.25}
+    assert cp.data.set.log.charged_energy_by_source == {'bat': 9250.0, 'cp': 0.0, 'grid': 5125.0, 'pv': 5125.0}
 
 
 def test_calc_charge_cost_two_hour_change_reference_middle(mock_data, monkeypatch):
@@ -142,7 +170,6 @@ def test_calc_charge_cost_two_hour_change_reference_middle(mock_data, monkeypatc
 def test_calc_charge_cost_two_hour_change_reference_end(mock_data, monkeypatch):
     cp = init_cp(46500, {'bat': 1000, 'cp': 0.0, 'grid': 1000, 'pv': 1000}, 6)
     daily_log = mock_daily_log_with_charging("05/16/2022, 06:45", 24, monkeypatch)
-    # mock_create_entry_reference_end("08:40", daily_log, monkeypatch)
 
     datetime_mock = MagicMock(wraps=datetime.datetime)
     datetime_mock.now.return_value = datetime.datetime.fromtimestamp(1652683201)
@@ -151,4 +178,4 @@ def test_calc_charge_cost_two_hour_change_reference_end(mock_data, monkeypatch):
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
         calculate_charged_energy_by_source(cp, True)
 
-    assert cp.data.set.log.charged_energy_by_source == {'bat': 8999.2, 'cp': 0.0, 'grid': 5499.55, 'pv': 5001.25}
+    assert cp.data.set.log.charged_energy_by_source == {'bat': 9250.0, 'cp': 0.0, 'grid': 5125.0, 'pv': 5125.0}
