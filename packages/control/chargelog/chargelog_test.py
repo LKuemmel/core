@@ -7,7 +7,7 @@ import pytest
 
 from control import data
 from control.chargelog import chargelog
-from control.chargelog.chargelog import calculate_charged_energy_by_source
+from control.chargelog.chargelog import calc_energy_costs
 from control.chargepoint.chargepoint import Chargepoint
 from control.chargepoint.chargepoint_data import empty_enery_source_dict_factory
 from helpermodules import timecheck
@@ -37,7 +37,8 @@ def mock_daily_log_with_charging(date: str, num_of_intervalls, monkeypatch):
                                      'hc': {'all': {'imported': 0}},
                                      'pv': {'all': {'exported': pv_exported}, 'pv1': {'exported': pv_exported}},
                                      'sh': {},
-                                     'timestamp': date.timestamp()})
+                                     'timestamp': date.timestamp(),
+                                     'prices': {'grid': 0.0003, 'pv': 0.00015, 'bat': 0.0002, 'cp': 0}})
         date += datetime.timedelta(minutes=5)
     mock_todays_daily_log = Mock(return_value=daily_log)
     monkeypatch.setattr(chargelog, "get_todays_daily_log", mock_todays_daily_log)
@@ -78,7 +79,7 @@ def test_calc_charge_cost_no_hour_change_reference_end(mock_data, monkeypatch):
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
-        calculate_charged_energy_by_source(cp, True)
+        calc_energy_costs(cp, True)
 
     assert cp.data.set.log.charged_energy_by_source == {
         'grid': 1625, 'pv': 1625, 'bat': 3250, 'cp': 0.0}
@@ -100,13 +101,14 @@ def test_calc_charge_cost_no_hour_change_reference_end_no_charge_at_end(mock_dat
                                  'hc': {'all': {'imported': 0}},
                                  'pv': {'all': {'exported': 3500}, 'pv1': {'exported': 3500}},
                                  'sh': {},
-                                 'timestamp': 1652683500})
+                                 'timestamp': 1652683500,
+                                 'prices': {'grid': 0.0003, 'pv': 0.00015, 'bat': 0.0002, 'cp': 0}})
     datetime_mock = MagicMock(wraps=datetime.datetime)
     datetime_mock.now.return_value = datetime.datetime.fromtimestamp(1652683552)
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
-        calculate_charged_energy_by_source(cp, True)
+        calc_energy_costs(cp, True)
 
     assert cp.data.set.log.charged_energy_by_source == {
         'grid': 1625, 'pv': 1625, 'bat': 3250, 'cp': 0.0}
@@ -120,7 +122,7 @@ def test_calc_charge_cost_first_hour_change_reference_begin(mock_data, monkeypat
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
-        calculate_charged_energy_by_source(cp, False)
+        calc_energy_costs(cp, False)
 
     assert cp.data.set.log.charged_energy_by_source == {'grid': 1500, 'pv': 1500, 'bat': 3000, 'cp': 0.0}
 
@@ -133,7 +135,7 @@ def test_calc_charge_cost_first_hour_change_reference_begin_day_change(mock_data
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
-        calculate_charged_energy_by_source(cp, False)
+        calc_energy_costs(cp, False)
 
     assert cp.data.set.log.charged_energy_by_source == {'grid': 1500, 'pv': 1500, 'bat': 3000, 'cp': 0.0}
 
@@ -146,7 +148,7 @@ def test_calc_charge_cost_one_hour_change_reference_end(mock_data, monkeypatch):
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
-        calculate_charged_energy_by_source(cp, True)
+        calc_energy_costs(cp, True)
 
     assert cp.data.set.log.charged_energy_by_source == {'bat': 9250.0, 'cp': 0.0, 'grid': 5125.0, 'pv': 5125.0}
 
@@ -162,7 +164,7 @@ def test_calc_charge_cost_two_hour_change_reference_middle(mock_data, monkeypatc
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
-        calculate_charged_energy_by_source(cp, False)
+        calc_energy_costs(cp, False)
 
     assert cp.data.set.log.charged_energy_by_source == {'bat': 13000.0, 'cp': 0.0, 'grid': 7000.0, 'pv': 7000.0}
 
@@ -176,6 +178,6 @@ def test_calc_charge_cost_two_hour_change_reference_end(mock_data, monkeypatch):
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
     with patch("builtins.open", mock_open(read_data=json.dumps(daily_log))):
-        calculate_charged_energy_by_source(cp, True)
+        calc_energy_costs(cp, True)
 
     assert cp.data.set.log.charged_energy_by_source == {'bat': 9250.0, 'cp': 0.0, 'grid': 5125.0, 'pv': 5125.0}

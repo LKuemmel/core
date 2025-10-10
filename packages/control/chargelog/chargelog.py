@@ -7,7 +7,9 @@ from typing import Any, Dict, List, Optional
 
 from control import data
 from dataclass_utils import asdict
-from helpermodules.measurement_logging.process_log import analyse_percentage, get_log_from_date_until_now
+from helpermodules.measurement_logging.process_log import (
+    FILE_ERRORS, CalculationType, _analyse_energy_source,
+    _process_entries, analyse_percentage, get_log_from_date_until_now, get_totals)
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils.json_file_handler import write_and_check
@@ -199,7 +201,7 @@ def _create_entry(chargepoint, charging_ev, immediately: bool = True):
     calculate_charged_energy_by_source(chargepoint, True)
     energy_source = get_value_or_default(lambda: analyse_percentage(get_log_from_date_until_now(
         log_data.timestamp_start_charging)["totals"])["energy_source"])
-    costs = round(_calc_costs(log_data.charged_energy_by_source), 2)
+    costs = round(log_data.costs, 2)
     new_entry = {
         "chargepoint":
         {
@@ -261,42 +263,47 @@ def write_new_entry(new_entry):
     log.debug(f"Neuer Ladelog-Eintrag: {new_entry}")
 
 
-def calculate_charged_energy_by_source(cp, create_log_entry: bool = False):
-    content = get_todays_daily_log()
+def calc_energy_costs(cp, create_log_entry: bool = False):
+    if cp.data.set.log.imported_since_plugged != 0 and cp.data.set.log.imported_since_mode_switch != 0:
+        reference_entries = _get_reference_entries()
+        charged_energy_by_source = calculate_charged_energy_by_source(cp, reference_entries, create_log_entry)
+        _add_charged_energy_by_source(cp, charged_energy_by_source)
+        log.debug(f"charged_energy_by_source {charged_energy_by_source} "
+                  f"total charged_energy_by_source {cp.data.set.log.charged_energy_by_source}")
+        costs = _calc_costs(charged_energy_by_source, reference_entries["entries"][-1]["prices"])
+        cp.data.set.log.costs += costs
+        Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
+
+
+def calculate_charged_energy_by_source(cp, reference_entries, create_log_entry: bool = False):
     try:
-        if cp.data.set.log.imported_since_plugged != 0 and cp.data.set.log.imported_since_mode_switch != 0:
-            reference = _get_reference_position(cp, create_log_entry)
-            reference_time = get_reference_time(cp, reference)
-            reference_entries = _get_reference_entries(reference_time)
-            absolut_energy_source = reference_entries["totals"]["cp"][f"cp{cp.num}"]
-            relative_energy_source = get_relative_energy_source(absolut_energy_source)
-            log.debug(f"reference {reference}, reference_time {reference_time}, "
-                      f"cp.data.set.log.imported_since_mode_switch {cp.data.set.log.imported_since_mode_switch}, "
-                      f"cp.data.set.log.timestamp_start_charging {cp.data.set.log.timestamp_start_charging}")
-            log.debug(f"energy_source_entry {relative_energy_source}")
-            if reference == ReferenceTime.START:
+        reference = _get_reference_position(cp, create_log_entry)
+        absolut_energy_source = reference_entries["totals"]["cp"][f"cp{cp.num}"]
+        relative_energy_source = get_relative_energy_source(absolut_energy_source)
+        log.debug(f"reference {reference}, "
+                  f"cp.data.set.log.imported_since_mode_switch {cp.data.set.log.imported_since_mode_switch}, "
+                  f"cp.data.set.log.timestamp_start_charging {cp.data.set.log.timestamp_start_charging}")
+        log.debug(f"energy_source_entry {relative_energy_source}")
+        if reference == ReferenceTime.START:
+            charged_energy = cp.data.set.log.imported_since_mode_switch
+        elif reference == ReferenceTime.MIDDLE:
+            charged_energy = (reference_entries["entries"][-1]["cp"][f"cp{cp.num}"]["imported"] -
+                              reference_entries["entries"][0]["cp"][f"cp{cp.num}"]["imported"])
+        elif reference == ReferenceTime.END:
+            # timestamp_before_full_hour, dann gibt es schon ein Zwischenergebnis
+            if timecheck.create_unix_timestamp_current_full_hour() <= cp.data.set.log.timestamp_start_charging:
                 charged_energy = cp.data.set.log.imported_since_mode_switch
-            elif reference == ReferenceTime.MIDDLE:
-                charged_energy = (content["entries"][-1]["cp"][f"cp{cp.num}"]["imported"] -
-                                  reference_entries["entries"][0]["cp"][f"cp{cp.num}"]["imported"])
-            elif reference == ReferenceTime.END:
-                # timestamp_before_full_hour, dann gibt es schon ein Zwischenergebnis
-                if timecheck.create_unix_timestamp_current_full_hour() <= cp.data.set.log.timestamp_start_charging:
-                    charged_energy = cp.data.set.log.imported_since_mode_switch
-                else:
-                    log.debug(f"cp.data.get.imported {cp.data.get.imported}")
-                    charged_energy = cp.data.get.imported - \
-                        reference_entries["entries"][0]["cp"][f"cp{cp.num}"]["imported"]
             else:
-                raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
-            log.debug(f'power source {relative_energy_source}')
-            log.debug(f"charged_energy {charged_energy}")
-            charged_energy_by_source = _get_charged_energy_by_source(
-                relative_energy_source, charged_energy)
-            _add_charged_energy_by_source(cp, charged_energy_by_source)
-            log.debug(f"charged_energy_by_source {charged_energy_by_source} "
-                      f"total charged_energy_by_source {cp.data.set.log.charged_energy_by_source}")
-            Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
+                log.debug(f"cp.data.get.imported {cp.data.get.imported}")
+                charged_energy = cp.data.get.imported - \
+                    reference_entries["entries"][0]["cp"][f"cp{cp.num}"]["imported"]
+        else:
+            raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
+        log.debug(f'power source {relative_energy_source}')
+        log.debug(f"charged_energy {charged_energy}")
+        return _get_charged_energy_by_source(
+            relative_energy_source, charged_energy)
+
     except Exception:
         log.exception(f"Fehler beim Berechnen der Ladekosten für Ladepunkt {cp.num}")
 
@@ -311,13 +318,12 @@ ENERGY_SOURCES = ("bat", "cp", "grid", "pv")
 
 
 def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
-    # Referenz-Zeitpunkt ermitteln (angesteckt oder letzte volle Stunde)
-    # Wurde innerhalb der letzten Stunde angesteckt?
     if create_log_entry:
-        # Ladekosten für angefangene Stunde ermitteln
+        # Ladekosten in einem angebrochenen 5 Min Intervall ermitteln
         return ReferenceTime.END
     else:
-        # Wenn der Ladevorgang erst innerhalb der letzten Stunde gestartet wurde, ist das das erste Zwischenergebnis.
+        # Wenn der Ladevorgang erst innerhalb des letzten 5 Min Intervalls gestartet wurde,
+        # ist das das erste Zwischenergebnis.
         one_hour_back = timecheck.create_timestamp() - 3600
         if (one_hour_back - cp.data.set.log.timestamp_start_charging) < 0:
             return ReferenceTime.START
@@ -340,17 +346,23 @@ def get_reference_time(cp, reference_position):
         raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference_position}")
 
 
-def _get_reference_entries(reference_time: float) -> List[Dict]:
-    """
-    Gibt alle Log-Entries ab dem reference_time (einschließlich) aus allen daily_log-Dateien bis heute zurück.
-    Falls keine gefunden werden, werden die zwei letzten Einträge aus der letzten vorhandenen Datei zurückgegeben.
-    Zwischen now und reference_time müssen mindestens zehn Minuten liegen, sonst wird reference_time angepasst.
-    """
-    now = timecheck.create_timestamp()
-    min_diff = 600  # 10 Minuten in Sekunden
-    if now - reference_time < min_diff:
-        reference_time = now - min_diff
-    return get_log_from_date_until_now(reference_time)
+def _get_reference_entries() -> List[Dict]:
+    data = {}
+    try:
+        entries = get_todays_daily_log()["entries"]
+        if len(entries) >= 2:
+            data["entries"] = [entries[-2], entries[-1]]
+        else:
+            date_day_before = (datetime.datetime.now() + datetime.timedelta(days=-1)).strftime("%Y%m%d")
+            entries_day_before = get_daily_log(date_day_before)["entries"]
+            data["entries"] = [entries_day_before[-1], entries[0]]
+        data["entries"] = _process_entries(data["entries"], CalculationType.ENERGY)
+        data["totals"] = get_totals(data["entries"], False)
+        data = _analyse_energy_source(data)
+    except Exception:
+        log.exception("Fehler beim Zusammenstellen der zwei letzten Logeinträge")
+    finally:
+        return data
 
 
 def get_todays_daily_log():
@@ -362,20 +374,16 @@ def get_daily_log(day):
     try:
         with open(filepath, "r", encoding="utf-8") as json_file:
             return json.load(json_file)
-    except FileNotFoundError:
+    except FILE_ERRORS:
         return []
 
 
-def _calc_costs(charged_energy_by_source: Dict[str, float]) -> float:
-    prices = data.data.general_data.data.prices
+def _calc_costs(charged_energy_by_source: Dict[str, float], costs: Dict[str, float]) -> float:
 
-    bat_costs = prices.bat * charged_energy_by_source["bat"]
-    cp_costs = prices.cp * charged_energy_by_source["cp"]
-    try:
-        grid_costs = data.data.optional_data.et_get_current_price() * charged_energy_by_source["grid"]
-    except Exception:
-        grid_costs = prices.grid * charged_energy_by_source["grid"]
-    pv_costs = prices.pv * charged_energy_by_source["pv"]
+    bat_costs = costs["bat"] * charged_energy_by_source["bat"]
+    cp_costs = costs["cp"] * charged_energy_by_source["cp"]
+    grid_costs = costs["grid"] * charged_energy_by_source["grid"]
+    pv_costs = costs["pv"] * charged_energy_by_source["pv"]
 
     log.debug(
         f'Ladepreis nach Energiequelle: {bat_costs}€ Speicher ({charged_energy_by_source["bat"]/1000}kWh), '
