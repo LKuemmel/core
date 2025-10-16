@@ -1,0 +1,78 @@
+
+
+
+name: Build Changed Web Themes
+on:
+  push:
+    paths:
+      - packages/modules/display_themes/cards/source/**
+      - packages/modules/display_themes/colors/source/**
+      - packages/modules/web_themes/colors/source/**
+      - packages/modules/web_themes/koala/source/**
+    branches:
+      - test
+
+
+jobs:
+  build-and-push-themes:
+    runs-on: ubuntu-latest
+    env:
+      THEME_BASES: |
+        packages/modules/display_themes/cards/source
+        packages/modules/display_themes/colors/source
+        packages/modules/web_themes/colors/source
+        packages/modules/web_themes/koala/source
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            packages/modules/display_themes/cards/source/package-lock.json
+            packages/modules/display_themes/colors/source/package-lock.json
+            packages/modules/web_themes/colors/source/package-lock.json
+            packages/modules/web_themes/koala/source/package-lock.json
+
+      - name: Finde geänderte Themes
+        id: changed
+        run: |
+          git fetch origin test
+          git diff --name-only $(git merge-base HEAD origin/test)\
+            | grep -E '^(packages/modules/display_themes/cards/source/|packages/modules/display_themes/colors/source/|packages/modules/web_themes/colors/source/|packages/modules/web_themes/koala/source/)' \
+            | awk -F/ '{print $4}' | sort -u > changed_themes.txt
+          cat changed_themes.txt
+
+      - name: Installiere Abhängigkeiten und baue geänderte Themes
+        run: |
+          while read theme; do
+            for base in $THEME_BASES; do
+              if [ -d "$base/$theme" ]; then
+                echo "Installiere und baue Theme: $base/$theme"
+                cd "$base/$theme"
+                npm ci || npm install
+                npm run build
+                cd -
+              fi
+            done
+          done < changed_themes.txt
+
+      - name: Commit und Push gebaute Themes
+        run: |
+          for base in $THEME_BASES; do
+            git add $base/*/dist/* 2>/dev/null || true
+          done
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          if ! git diff --cached --quiet; then
+            git commit -m "Build Web Themes"
+            git push
+          else
+            echo "No changes to commit."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
