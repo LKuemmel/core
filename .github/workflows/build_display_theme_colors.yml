@@ -5,7 +5,7 @@ on:
     paths:
       - packages/modules/display_themes/colors/source/**
     branches:
-      - master
+      - test
 
 jobs:
   build:

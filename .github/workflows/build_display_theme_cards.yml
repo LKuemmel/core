@@ -5,7 +5,7 @@ on:
     paths:
       - packages/modules/display_themes/cards/source/**
     branches:
-      - master
+      - test
 
 jobs:
   build:

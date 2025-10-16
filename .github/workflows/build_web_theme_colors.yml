@@ -5,7 +5,7 @@ on:
     paths:
       - packages/modules/web_themes/colors/source/**
     branches:
-      - master
+      - test
 
 jobs:
   build:
