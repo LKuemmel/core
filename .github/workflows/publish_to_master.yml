@@ -10,7 +10,7 @@ on:
       - packages/modules/web_themes/colors/source/**
       - packages/modules/web_themes/koala/source/**
     branches:
-      - test
+              if [ -d "$base/$theme" ] && [ "$(basename $base/$theme)" = "$theme" ]; then
 
 
 jobs:
@@ -49,9 +49,9 @@ jobs:
         run: |
           while read theme; do
             for base in $THEME_BASES; do
-              if [ -d "$base/$theme" ]; then
-                echo "Installiere und baue Theme: $base/$theme"
-                cd "$base/$theme"
+              if [[ "$base" == *"$theme"* ]]; then
+                echo "Installiere und baue Theme: $theme"
+                cd "$base"
                 npm ci || npm install
                 npm run build
                 cd -
