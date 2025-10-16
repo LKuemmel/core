@@ -41,11 +41,9 @@ jobs:
         id: changed
         run: |
           git fetch origin test
-          git diff --name-only origin/test...HEAD \
-            | grep -E '^(packages/modules/web_themes/koala/source)' \
+          git diff --name-only origin/test | grep -E '^($THEME_BASES)' \
             | awk -F/ '{print $4}' | sort -u > changed_themes.txt
           cat changed_themes.txt
-          echo "::set-output name=changed_themes::$(cat changed_themes.txt | tr '\n' ',')"
 
       - name: Installiere Abhängigkeiten und baue geänderte Themes
         run: |
@@ -76,3 +74,4 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
