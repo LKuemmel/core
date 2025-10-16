@@ -40,8 +40,8 @@ jobs:
       - name: Finde geänderte Themes
         id: changed
         run: |
-          git fetch origin master
-          git diff --name-only origin/master...HEAD \
+          git fetch origin test
+          git diff --name-only origin/test...HEAD \
             | grep -E '^($THEME_BASES)' \
             | awk -F/ '{print $4}' | sort -u > changed_themes.txt
           cat changed_themes.txt
