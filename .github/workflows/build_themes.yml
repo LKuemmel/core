@@ -41,7 +41,7 @@ jobs:
         id: changed
         run: |
           git fetch origin test
-          git diff --name-only origin/test \
+          git diff --name-only origin/test HEAD\
             | grep -E '^(packages/modules/display_themes/cards/source/|packages/modules/display_themes/colors/source/|packages/modules/web_themes/colors/source/|packages/modules/web_themes/koala/source/)' \
             | awk -F/ '{print $4}' | sort -u > changed_themes.txt
           cat changed_themes.txt
