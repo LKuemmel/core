@@ -23,7 +23,7 @@ class KoalaWebThemeConfiguration:
 @auto_str
 class KoalaWebTheme:
     def __init__(self,
-                 name: str = "Koala",
+                 name: str = "Koala ",
                  type: str = "koala",
                  official: bool = True,
                  configuration: KoalaWebThemeConfiguration = None) -> None:
