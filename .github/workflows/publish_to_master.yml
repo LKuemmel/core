@@ -9,8 +9,6 @@ on:
       - packages/modules/display_themes/colors/source/**
       - packages/modules/web_themes/colors/source/**
       - packages/modules/web_themes/koala/source/**
-    branches:
-              if [ -d "$base/$theme" ] && [ "$(basename $base/$theme)" = "$theme" ]; then
 
 
 jobs:
