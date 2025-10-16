@@ -5,7 +5,7 @@ on:
     paths:
       - packages/modules/web_themes/koala/source/**
     branches:
-      - master
+      - test
 
 jobs:
   build:
