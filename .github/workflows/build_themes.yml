@@ -10,7 +10,7 @@ on:
       - packages/modules/web_themes/colors/source/**
       - packages/modules/web_themes/koala/source/**
     branches:
-      - build_themes_workflow
+      - test
 
 
 jobs:
