@@ -1,15 +1,16 @@
+import copy
 import datetime
 from enum import Enum
 import json
 import logging
 import pathlib
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from control import data
 from dataclass_utils import asdict
 from helpermodules.measurement_logging.process_log import (
     FILE_ERRORS, CalculationType, _analyse_energy_source,
-    _process_entries, analyse_percentage, get_log_from_date_until_now, get_totals)
+    _process_entries, analyse_percentage, analyse_percentage_totals, get_log_from_date_until_now, get_totals)
 from helpermodules.pub import Pub
 from helpermodules import timecheck
 from helpermodules.utils.json_file_handler import write_and_check
@@ -265,20 +266,21 @@ def write_new_entry(new_entry):
 
 def calc_energy_costs(cp, create_log_entry: bool = False):
     if cp.data.set.log.imported_since_plugged != 0 and cp.data.set.log.imported_since_mode_switch != 0:
-        reference_entries = _get_reference_entries()
-        charged_energy_by_source = calculate_charged_energy_by_source(cp, reference_entries, create_log_entry)
+        processed_entries, reference_entries = _get_reference_entries()
+        charged_energy_by_source = calculate_charged_energy_by_source(
+            cp, processed_entries, reference_entries, create_log_entry)
         _add_charged_energy_by_source(cp, charged_energy_by_source)
         log.debug(f"charged_energy_by_source {charged_energy_by_source} "
                   f"total charged_energy_by_source {cp.data.set.log.charged_energy_by_source}")
-        costs = _calc_costs(charged_energy_by_source, reference_entries["entries"][-1]["prices"])
+        costs = _calc_costs(charged_energy_by_source, reference_entries[-1]["prices"])
         cp.data.set.log.costs += costs
         Pub().pub(f"openWB/set/chargepoint/{cp.num}/set/log", asdict(cp.data.set.log))
 
 
-def calculate_charged_energy_by_source(cp, reference_entries, create_log_entry: bool = False):
+def calculate_charged_energy_by_source(cp, processed_entries, reference_entries, create_log_entry: bool = False):
     try:
         reference = _get_reference_position(cp, create_log_entry)
-        absolut_energy_source = reference_entries["totals"]["cp"][f"cp{cp.num}"]
+        absolut_energy_source = processed_entries["totals"]["cp"][f"cp{cp.num}"]
         relative_energy_source = get_relative_energy_source(absolut_energy_source)
         log.debug(f"reference {reference}, "
                   f"cp.data.set.log.imported_since_mode_switch {cp.data.set.log.imported_since_mode_switch}, "
@@ -287,16 +289,15 @@ def calculate_charged_energy_by_source(cp, reference_entries, create_log_entry: 
         if reference == ReferenceTime.START:
             charged_energy = cp.data.set.log.imported_since_mode_switch
         elif reference == ReferenceTime.MIDDLE:
-            charged_energy = (reference_entries["entries"][-1]["cp"][f"cp{cp.num}"]["imported"] -
-                              reference_entries["entries"][0]["cp"][f"cp{cp.num}"]["imported"])
+            charged_energy = (reference_entries[-1]["cp"][f"cp{cp.num}"]["imported"] -
+                              reference_entries[0]["cp"][f"cp{cp.num}"]["imported"])
         elif reference == ReferenceTime.END:
-            # timestamp_before_full_hour, dann gibt es schon ein Zwischenergebnis
-            if timecheck.create_unix_timestamp_current_full_hour() <= cp.data.set.log.timestamp_start_charging:
+            if (timecheck.create_timestamp() - cp.data.set.log.timestamp_start_charging) < 300:
                 charged_energy = cp.data.set.log.imported_since_mode_switch
             else:
                 log.debug(f"cp.data.get.imported {cp.data.get.imported}")
                 charged_energy = cp.data.get.imported - \
-                    reference_entries["entries"][0]["cp"][f"cp{cp.num}"]["imported"]
+                    reference_entries[-1]["cp"][f"cp{cp.num}"]["imported"]
         else:
             raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference}")
         log.debug(f'power source {relative_energy_source}')
@@ -324,45 +325,31 @@ def _get_reference_position(cp, create_log_entry: bool) -> ReferenceTime:
     else:
         # Wenn der Ladevorgang erst innerhalb des letzten 5 Min Intervalls gestartet wurde,
         # ist das das erste Zwischenergebnis.
-        one_hour_back = timecheck.create_timestamp() - 3600
-        if (one_hour_back - cp.data.set.log.timestamp_start_charging) < 0:
+        if (timecheck.create_timestamp() - cp.data.set.log.timestamp_start_charging) < 300:
             return ReferenceTime.START
         else:
             return ReferenceTime.MIDDLE
 
 
-def get_reference_time(cp, reference_position):
-    if reference_position == ReferenceTime.START:
-        return cp.data.set.log.timestamp_start_charging
-    elif reference_position == ReferenceTime.MIDDLE:
-        return timecheck.create_timestamp() - 3660
-    elif reference_position == ReferenceTime.END:
-        # Wenn der Ladevorgang erst innerhalb der letzten Stunde gestartet wurde.
-        if timecheck.create_unix_timestamp_current_full_hour() <= cp.data.set.log.timestamp_start_charging:
-            return cp.data.set.log.timestamp_start_charging
-        else:
-            return timecheck.create_unix_timestamp_current_full_hour() - 60
-    else:
-        raise TypeError(f"Unbekannter Referenz-Zeitpunkt {reference_position}")
-
-
-def _get_reference_entries() -> List[Dict]:
-    data = {}
+def _get_reference_entries() -> Tuple[List[Dict], List]:
+    processed_entries = {}
+    reference_entries = []
     try:
         entries = get_todays_daily_log()["entries"]
         if len(entries) >= 2:
-            data["entries"] = [entries[-2], entries[-1]]
+            reference_entries = [entries[-2], entries[-1]]
         else:
             date_day_before = (datetime.datetime.now() + datetime.timedelta(days=-1)).strftime("%Y%m%d")
             entries_day_before = get_daily_log(date_day_before)["entries"]
-            data["entries"] = [entries_day_before[-1], entries[0]]
-        data["entries"] = _process_entries(data["entries"], CalculationType.ENERGY)
-        data["totals"] = get_totals(data["entries"], False)
-        data = _analyse_energy_source(data)
+            reference_entries = [entries_day_before[-1], entries[0]]
+        processed_entries["entries"] = copy.deepcopy(reference_entries)
+        processed_entries["entries"] = _process_entries(processed_entries["entries"], CalculationType.ENERGY)
+        processed_entries["totals"] = get_totals(processed_entries["entries"], False)
+        processed_entries = _analyse_energy_source(processed_entries)
     except Exception:
         log.exception("Fehler beim Zusammenstellen der zwei letzten Logeinträge")
     finally:
-        return data
+        return processed_entries, reference_entries
 
 
 def get_todays_daily_log():
