@@ -2,7 +2,7 @@
 
 Koala web theme for openWB
 
-## Install the dependencies
+v## Install the dependencies
 
 ```bash
 yarn

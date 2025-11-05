@@ -3,8 +3,6 @@ on:
   push:
     paths:
       - 'packages/modules/*_themes/*/source/**'
-    branches:
-      - master
 
 jobs:
   build-and-push-themes:
