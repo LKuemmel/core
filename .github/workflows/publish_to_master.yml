@@ -3,8 +3,6 @@ on:
   push:
     paths:
       - 'packages/modules/*_themes/*/source/**'
-    branches:
-      - master
 
 jobs:
   build-and-push-themes:
@@ -28,11 +26,13 @@ jobs:
           done
 
           # Prepare newline-separated THEME_BASES output
-          echo "theme_bases<<EOF" >> $GITHUB_OUTPUT
-          for b in "${theme_bases[@]}"; do
-            printf "%s\n" "$b"
-          done >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "theme_bases<<EOF"
+            for b in "${theme_bases[@]}"; do
+              printf "%s\n" "$b"
+            done
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
           # Prepare newline-separated cache paths (package-lock.json)
           cache_paths=""
@@ -40,9 +40,11 @@ jobs:
             cache_paths="${cache_paths}${b}/source/package-lock.json\n"
           done
           cache_paths=${cache_paths%\\n}
-          echo "cache_paths<<EOF" >> $GITHUB_OUTPUT
-          printf "%b" "$cache_paths" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "cache_paths<<EOF"
+            printf "%b" "$cache_paths"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Setup Node.js v24
         uses: actions/setup-node@v4
