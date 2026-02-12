@@ -7,7 +7,7 @@ from helpermodules.utils.run_command import run_command
 from modules.common.abstract_device import DeviceDescriptor
 from modules.common.component_context import SingleComponentUpdateContext
 from modules.common.configurable_device import ConfigurableDevice, ComponentFactoryByType, MultiComponentUpdater
-from modules.common.modbus import ModbusTcpClient_
+from modules.common.modbus import ModbusSerialClient_, ModbusTcpClient_
 from modules.devices.openwb.openwb_flex.bat import BatKitFlex
 from modules.devices.openwb.openwb_flex.config import (BatKitFlexSetup,
                                                        ConsumptionCounterFlexSetup,
@@ -47,7 +47,7 @@ def create_device(device_config: Flex):
 
     def initializer():
         nonlocal client
-        client = ModbusTcpClient_(device_config.configuration.ip_address, device_config.configuration.port)
+        client = ModbusSerialClient_("/dev/ttyACM0")
 
     def error_handler():
         run_command([f"{Path(__file__).resolve().parents[4]}/modules/common/restart_protoss_admin",
