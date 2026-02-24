@@ -559,8 +559,8 @@ class ChargeTemplate:
             plan_current = plan.dc_current
             max_current = ev_template.data.dc_max_current
         if plan.limit.selected != "soc" and charge_state is False:
-            # das Abfrageintervall nur einbeziehen, wenn die Ladung bereits gestartet wurde, sonst wird einfach alles um das
-            # Abfrageintervall früher gestartet, und nicht die Pufferzeit um das Abfrageintervall erhöht.
+            # das Abfrageintervall nur einbeziehen, wenn die Ladung bereits gestartet wurde, sonst wird einfach alles
+            # um das Abfrageintervall früher gestartet, und nicht die Pufferzeit um das Abfrageintervall erhöht.
             soc_request_interval_offset = 0
         log.debug("Verwendeter Plan: "+str(plan.name))
         if (limit.selected == "soc" and
