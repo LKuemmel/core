@@ -276,7 +276,7 @@ def test_scheduled_charging_calc_current(plan_data: SelectedPlan,
 
     # execution
     ret = ct.scheduled_charging_calc_current(plan_data, soc, used_amount, 3, 3, 6,
-                                             0, ChargingType.AC.value, EvTemplate(), BidiState.BIDI_CAPABLE)
+                                             0, ChargingType.AC.value, EvTemplate(), BidiState.BIDI_CAPABLE, True)
 
     # evaluation
     assert ret == expected
@@ -288,7 +288,7 @@ def test_scheduled_charging_calc_current_no_plans():
 
     # execution
     ret = ct.scheduled_charging_calc_current(
-        None, 63, 5, 3, 3, 6, 0, ChargingType.AC.value, EvTemplate(), BidiState.BIDI_CAPABLE)
+        None, 63, 5, 3, 3, 6, 0, ChargingType.AC.value, EvTemplate(), BidiState.BIDI_CAPABLE, True)
 
     # evaluation
     assert ret == (0, "stop", ChargeTemplate.SCHEDULED_CHARGING_NO_PLANS_CONFIGURED, 3)
@@ -383,7 +383,7 @@ def test_scheduled_charging_calc_current_electricity_tariff(
     # execution
     ret = ct.scheduled_charging_calc_current(
         SelectedPlan(plan=plan, remaining_time=601, phases=3, duration=3600),
-        current_soc, 0, 3, 3, 6, 0, ChargingType.AC.value, EvTemplate(), BidiState.BIDI_CAPABLE)
+        current_soc, 0, 3, 3, 6, 0, ChargingType.AC.value, EvTemplate(), BidiState.BIDI_CAPABLE, True)
 
     # evaluation
     assert ret == expected
