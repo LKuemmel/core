@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 112
+    DATASTORE_VERSION = 113
 
     valid_topic = [
         "^openWB/bat/config/bat_control_permitted$",
@@ -2858,3 +2858,13 @@ class UpdateConfig:
         run_command(['pip', 'uninstall', 'bimmer_connected', '-y'], process_exception=True)
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(112)
+
+    def upgrade_datastore_113(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if re.search("openWB/vehicle/[0-9]+/soc_module/config", topic) is not None:
+                payload = decode_payload(payload)
+                if payload.get("type") == "manual" and payload["configuration"].get("reset_after_unplug") is None:
+                    payload["configuration"]["reset_after_unplug"] = False
+                    return {topic: payload}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(113)
