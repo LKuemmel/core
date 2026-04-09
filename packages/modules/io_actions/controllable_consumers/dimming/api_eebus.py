@@ -46,7 +46,7 @@ class DimmingEebus(AbstractIoAction):
                 self.import_power_left = lpc_value + surplus
             else:
                 self.import_power_left = lpc_value
-        self.import_power_left -= self.config.configuration.fixed_import_power
+        self.import_power_left = max(0, self.import_power_left - self.config.configuration.fixed_import_power)
         log.debug(f"Dimmen: {self.import_power_left}W inkl. Überschuss")
 
         with ModifyLoglevelContext(control_command_log, logging.DEBUG):
