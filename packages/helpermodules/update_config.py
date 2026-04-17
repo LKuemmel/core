@@ -3078,4 +3078,4 @@ class UpdateConfig:
                         plan.update({"min_bat_soc": None})
                 return {topic: payload}
         self._loop_all_received_topics(upgrade)
-        # self._append_datastore_version(122)
+        self._append_datastore_version(122)
