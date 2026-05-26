@@ -25,7 +25,7 @@ def create_request_url(config: EnergyChartsTariffConfiguration) -> str:
 
 
 def parse_response(config: EnergyChartsTariffConfiguration, raw_prices: dict) -> Dict[str, float]:
-    prices: Dict[int, float] = {}
+    prices: Dict[str, float] = {}
     for timestamp, price_per_MWh in zip(raw_prices['unix_seconds'],  raw_prices['price']):
         formatted_price = float(price_per_MWh + (config.surcharge*10))/1000000
         if config.net is False:
