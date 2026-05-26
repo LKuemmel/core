@@ -57,7 +57,7 @@ NO_MODULE = {"type": None, "configuration": {}}
 
 class UpdateConfig:
 
-    DATASTORE_VERSION = 123
+    DATASTORE_VERSION = 124
 
     valid_topic = [
         "^openWB/bat/config/bat_control_activated$",
@@ -3118,3 +3118,20 @@ class UpdateConfig:
                     return {topic: configuration_payload}
         self._loop_all_received_topics(upgrade)
         self._append_datastore_version(123)
+
+    def upgrade_datastore_124(self) -> None:
+        def upgrade(topic: str, payload) -> Optional[dict]:
+            if "openWB/optional/ep/flexible_tariff/provider" == topic:
+                provider = decode_payload(payload)
+                if provider.get("type") == "energycharts":
+                    changed = False
+                    if provider["configuration"].get("net") is None:
+                        provider["configuration"]["net"] = True
+                        changed = True
+                    if provider["configuration"].get("tax") is None:
+                        provider["configuration"]["tax"] = 19
+                        changed = True
+                    if changed:
+                        return {topic: provider}
+        self._loop_all_received_topics(upgrade)
+        self._append_datastore_version(124)
