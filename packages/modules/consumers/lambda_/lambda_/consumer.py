@@ -35,6 +35,9 @@ def create_consumer(config: Lambda):
         client.write_register(102, values.evu_power, wordorder=Endian.Little, unit=config.configuration.modbus_id)
 
     def update() -> ConsumerState:
+        # Lambda erwartet aber auch bei fehlendem Überschuss immer wieder einen Wert von 0. Kommt nach 120 Sekunden
+        # nichts mehr, steht im Lambda Display "ALARM: E-Manager ungültiger Wert". Bitte deshalb auch bei fehlendem
+        # Überschuss immer wieder einen Wert senden, sonst wird der Modbus Port von Lambda geschlossen.
         power = client.read_holding_registers(
             103, ModbusDataType.INT_16, unit=config.configuration.modbus_id)
         imported, exported = sim_counter.sim_count(power)

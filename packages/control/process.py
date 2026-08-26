@@ -191,8 +191,7 @@ class Process:
                  f"state {ChargepointState(control_parameter.state).name}")
 
     def _start_consumer(self, consumer: Consumer) -> Thread:
-        if consumer.data.set.current != consumer.data.set.current_prev:
-            consumer.data.set.timestamp_last_current_set = timecheck.create_timestamp()
+        # jeden Zyklus den Soll-Strom setzen, da manche Verbraucher wie zB Lambda nach 120s den Modbus-Port schließen.
         if consumer.data.usage.type in (ConsumerUsage.CONTINUOUS,
                                         ConsumerUsage.SUSPENDABLE_ONOFF):
             return Thread(
