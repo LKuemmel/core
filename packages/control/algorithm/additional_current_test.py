@@ -1,6 +1,8 @@
 import pytest
 
+from control import data
 from control.algorithm import additional_current
+from control.chargemode import Chargemode
 from control.chargepoint.chargepoint import Chargepoint, ChargepointData
 from control.chargepoint.chargepoint_data import Set
 from control.chargepoint.control_parameter import ControlParameter
@@ -40,3 +42,27 @@ def test_set_loadmangement_message(set_current, limit, expected_msg, monkeypatch
 
     # evaluation
     assert cp1.data.get.state_str == expected_msg
+
+
+@pytest.mark.parametrize("phases", [1, 2, 3])
+def test_additional_current_preserves_target_across_counter_levels(phases):
+    """The previous stage's allocation may differ from the configured minimum."""
+    cp = data.data.cp_data["cp4"]
+    cp.data.control_parameter.chargemode = Chargemode.INSTANT_CHARGING
+    cp.data.control_parameter.submode = Chargemode.INSTANT_CHARGING
+    cp.data.control_parameter.min_current = 6
+    cp.data.control_parameter.required_current = 16
+    cp.data.control_parameter.required_currents = [16]*phases + [0]*(3-phases)
+    cp.data.get.charge_state = True
+    cp.data.get.voltages = [230]*3
+    cp.data.set.target_current = 10
+    for counter in data.data.counter_data.values():
+        counter.data.set.raw_currents_left = [100]*3
+        counter.data.set.raw_power_left = 40000
+
+    additional_current.AdditionalCurrent().set_additional_current([cp])
+
+    assert cp.data.set.current == 16
+    for counter in data.data.counter_data.values():
+        assert counter.data.set.raw_power_left == pytest.approx(40000 - 6*phases*230)
+        assert counter.data.set.raw_currents_left == [94]*phases + [100]*(3-phases)
